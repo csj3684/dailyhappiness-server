@@ -3,6 +3,7 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for,jsonify
 from flask import current_app as app
 from app.main.DB import DB
+import json
 
 loginPage= Blueprint('loginPage', __name__, url_prefix='/login')
 
@@ -19,16 +20,16 @@ def login():
         
         try:
             DB.curs.execute(sql, (_id, _password))
-        
-            rows = DB.curs.fetchall()
-        
+
+            rows = DB.curs.fetchone()
+            print(rows)
         except Exception as e:
             print(e)
         finally:
             DB.dbDisconnect()
         
         
-        return jsonify(rows)
+        return json.dumps(rows).encode('utf-8')
       elif request.method =='GET':
         return
         

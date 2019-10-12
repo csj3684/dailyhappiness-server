@@ -4,6 +4,7 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for,jsonify
 from flask import current_app as app
 from app.main.DB import DB
+import json
 
 registerPage= Blueprint('registerPage', __name__, url_prefix='/register')
 
@@ -15,7 +16,7 @@ def register():
         _age = request.form['age']
         _gender = request.form['gender']
         
-        print(_id, _password)
+        print(_id, _password, _age, _gender)
         DB.dbConnect()
         DB.setCursorDic()
         
@@ -24,15 +25,15 @@ def register():
         try:
             DB.curs.execute(sql, (_id, _password,_age,_gender))
             DB.conn.commit()
-            success = (True)
+            success = {'success':True}
         except Exception as e:
             print(e)
             
-            success = (False)
+            success = {'success':False}
         finally:
             DB.dbDisconnect()
         
-        return jsonify(success)
+        return json.dumps(success).encode('utf-8')
       elif request.method =='GET':
         return
                
