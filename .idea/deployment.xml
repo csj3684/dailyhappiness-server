@@ -1,22 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="Copy of project-level server 'dailyhappiness'">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ubuntu@52.78.108.115:22 (1)">
     <serverData>
-      <paths name="Copy of project-level server 'dailyhappiness'">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="Copy of project-level server 'dailyhappiness' (1)">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="dailyhappiness">
+      <paths name="ubuntu@52.78.108.115:22">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />

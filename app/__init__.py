@@ -6,6 +6,7 @@ app = Flask(__name__)
 from app.main.index import main as main
 from app.main.login import loginPage
 from app.main.register import registerPage
+from app.main.MissionBundle import missionBundlePage
 
 
 app.register_blueprint(main)
