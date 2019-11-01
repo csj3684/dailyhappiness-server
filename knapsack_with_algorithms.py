@@ -22,8 +22,6 @@ def isNaN(a):
     return a != a
 
 
-# In[20]:
-
 
 def show_R_hat_log(log_for_R_hat, method, user_id, mission_id):
     log = log_for_R_hat.loc[method]['value']
@@ -68,10 +66,6 @@ def show_user_knapsack(log_for_knapsack, user_id):
     print(frame)
     print()
         
-    
-
-
-# In[21]:
 
 
 # Matrix Completion 클래스들
@@ -234,7 +228,6 @@ class MatrixFactorization():
         print(self._training_process[self._epochs-1][1])
 
 
-# In[22]:
 
 
 # Regression 함수들
@@ -280,7 +273,7 @@ def IsAvailable(ols_result):
     return True
 
 
-# In[23]:
+
 
 
 # KNN 함수들
@@ -324,8 +317,9 @@ def get_distance_and_default_weight(user1, user2): # user 파라미터 = R.loc[u
         return {'distance' : -1, 'weight' : -1}, {'distance' : -1, 'weight' : -1}
     else:
         return {'distance' : shared_distance * (np.power(1.1, penalty_for_1 * penalty_cofficient)), 'weight' : -1}, {'distance' : shared_distance * (np.power(1.1, penalty_for_2 * penalty_cofficient)), 'weight' : -1 }
-        
-def get_D(R): # R = DataFrame(index = user_id, columns = mission_id ,data = {날씨, 기온, rating}
+
+# R = DataFrame(index = user_id, columns = mission_id ,data = {날씨, 기온, rating}
+def get_D(R):
     distance_matrix = pd.DataFrame(index = R.index, columns = R.index)
     for i in range(R.index.size):
         for j in range(i+1, R.index.size):
@@ -454,7 +448,7 @@ def find_k_nearest(ratings, distances_and_weights, user_idx):
 
     return k_nearest
 
-
+#knapsack
 def show_progress(current_sack, g, accumulated_cost, missions, i):
     global weekly_cost
     global best
@@ -594,13 +588,6 @@ def get_daily_missions_sacks(T_min, T_max, weekly_limited_cost, weekly_item_num)
 
     return sacks
 
-                                    
-            
-
-
-
-
-
 def get_R_hat_by_Regression(R, users_idx, missions_idx, data_num, log_for_R_hat):
     R_hat = pd.DataFrame(index = users_idx, columns = missions_idx)
     
@@ -700,38 +687,6 @@ def get_R_hat_by_Regression(R, users_idx, missions_idx, data_num, log_for_R_hat)
                 R_hat.loc[i][j] = 0
     return R_hat
 
-
-
-
-
-"""
-regression
-R_hat 리턴용
-
-R_refer 복사
-R_reer_for_regression 복사
-user_idx 복사
-
-	for user
-		user 거르기
-		target user가 안해본 미션 없애기
-			for mission
-				target mission 안하 사람 없애기
-				target mission 복구
-
-				회귀 및 R_hat 채우기
-
-				target mission 제거
-				target mission 안한 사람 없앤거 복귀
-		target user가 안해본 미션 복구
-		걸렀던 user 복구
-
-"""
-
-
-
-
-
 def get_R_hat_by_KNN(R, k, users_idx, missions_idx, data_num, log_for_R_hat):
     R_hat = pd.DataFrame(index = users_idx, columns = missions_idx)
     log_for_R_hat.loc['KNN']['value'] = pd.DataFrame(index = ['scale', 'sigma', 'distribution', 'graph_info'], columns = ['value'])
@@ -793,10 +748,6 @@ def get_R_hat_by_KNN(R, k, users_idx, missions_idx, data_num, log_for_R_hat):
             
     return R_hat
 
-
-
-
-
 def get_R_hat_by_MatrixCompletion(R, users_idx, missions_idx, data_num, log_for_R_hat):
     
     R_hat = pd.DataFrame(index = users_idx, columns = missions_idx)
@@ -825,15 +776,12 @@ def get_R_hat_by_MatrixCompletion(R, users_idx, missions_idx, data_num, log_for_
     return R_hat
 
 
-
-
-
 def get_knapsack(R_hat, users_idx, log_for_knapsack):
     
     global mission_id, expected_R, required_time, required_cost
     
     knapsack = pd.DataFrame(index = users_idx, columns = ['daily_missions'])
-    
+
     for i in range(len(users_idx)):
         target_user_id = users_idx[i]
 
@@ -876,10 +824,13 @@ missions_id = data.loc[:,'missions_id']
 weather = data.loc[:,'weather']
 temperature = data.loc[:,'temperature']
 rating = data.loc[:,'rating']
+#평가 데이터 개수
 data_num = len(users_id)
 
+#중복을 없앤 유저, 미션 배열
 users_idx = list(OrderedDict.fromkeys(users_id))
 missions_idx = list(OrderedDict.fromkeys(missions_id))
+#데이터 프레임 만들기
 R = pd.DataFrame(index = users_idx, columns = missions_idx)
 
 log_for_R_hat = pd.DataFrame(index = ['regression', 'KNN', 'matrix_completion'], columns = ['value'])
@@ -892,22 +843,18 @@ R_hat = get_R_hat_by_KNN(R, 3, users_idx, missions_idx, data_num, log_for_R_hat)
 
 print("R_hat 구하기 : ",time.time() - start, "초")
 
-R_hat
-
-show_R_hat_log(log_for_R_hat, "KNN", 'u1', 'M2')
-
-start = time.time()
-
+#knapsack 뭉치를 여러개 구한다.
 log_for_knapsack = pd.DataFrame(index = users_idx, columns = ['mission_batches', 'limited_cost', 'N'])
-
+#그중에서 가장 좋은 것을 뽑는다. knapsack도 데이터프레임.
 knapsack = get_knapsack(R_hat, users_idx, log_for_knapsack)
+#knapsack.loc['userid'][dailymissions']하면 미션 리스트에 접근 가능
 
 print("knapsack 구하기 : ",time.time() - start, "초\n")
 
-show_knapsack(knapsack)
+#show_knapsack(knapsack)
 
-for i in range(5):
-    show_user_knapsack(log_for_knapsack, users_idx[i])
+#for i in range(5):
+#    show_user_knapsack(log_for_knapsack, users_idx[i])
 
 
 
