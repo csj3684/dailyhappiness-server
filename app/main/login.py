@@ -12,7 +12,7 @@ def login():
       if request.method =='POST':
         _id = request.form['id']
         _password = request.form['password']
-        
+
         DB.dbConnect()
         DB.setCursorDic()
         
@@ -27,11 +27,11 @@ def login():
             print(e)
         finally:
             DB.dbDisconnect()
-        
-        
+
+
         return json.dumps(rows).encode('utf-8')
       elif request.method =='GET':
-        return
+        return 'GET'
         
         
 

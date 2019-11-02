@@ -32,10 +32,10 @@ def register():
             success = {'success':False}
         finally:
             DB.dbDisconnect()
-        
+        DB.dbDisconnect()
         return json.dumps(success).encode('utf-8')
       elif request.method =='GET':
-        return
+        return 'GET'
                
         
         
