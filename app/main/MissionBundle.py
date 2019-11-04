@@ -110,9 +110,3 @@ def incrementMission():
         DB.conn.commit()
     except Exception as e:
         print("missionOrder 증가 오류 , ",e)
-
-
-
-
-
-

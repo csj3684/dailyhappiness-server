@@ -11,5 +11,6 @@ from app.main.MissionBundle import missionBundlePage
 
 app.register_blueprint(main)
 app.register_blueprint(loginPage)    
-app.register_blueprint(registerPage) 
+app.register_blueprint(registerPage)
+app.register_blueprint(missionBundlePage)
 

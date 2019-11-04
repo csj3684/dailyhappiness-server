@@ -10,4 +10,3 @@ class MissionEvalutation:
         self.rating = rating
         self.weather = weather
         self.temperature = temperature
-
