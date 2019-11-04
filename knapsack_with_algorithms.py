@@ -49,20 +49,29 @@ def show_R_hat_log(log_for_R_hat, method, user_id, mission_id):
             
     elif method == "regression":
         print(log.loc[user_id][mission_id])
-        
-        
+
+
 def show_knapsack(knapsack):
     for i in knapsack.index:
-        print(i, "\tg :", round(knapsack.loc[i]['daily_missions']['expected_rating'],2), "\tcost :", round(knapsack.loc[i]['daily_missions']['total_cost'], 2), "\tmissions :", knapsack.loc[i]['daily_missions']['mission_id'])
+        if knapsack.loc[i]['daily_missions'] != None:
+            print(i, "\tg :", round(knapsack.loc[i]['daily_missions']['expected_rating'], 2), "\tcost :",
+                  round(knapsack.loc[i]['daily_missions']['total_cost'], 2), "\tmissions :",
+                  knapsack.loc[i]['daily_missions']['mission_id'])
     print()
-    
+
+
 def show_user_knapsack(log_for_knapsack, user_id):
-    print("user ID : ", user_id, "\nlimited cost : ", log_for_knapsack.loc[user_id]['limited_cost'], "\nN : ", log_for_knapsack.loc[user_id]['N'])
+    if log_for_knapsack.loc[user_id] == None:
+        return;
+    print("user ID : ", user_id, "\nlimited cost : ", log_for_knapsack.loc[user_id]['limited_cost'], "\nN : ",
+          log_for_knapsack.loc[user_id]['N'])
     print()
-    frame = pd.DataFrame(columns = ['g', 'cost', 'missions'])
+    frame = pd.DataFrame(columns=['g', 'cost', 'missions'])
     for i in range(len(log_for_knapsack.loc[user_id]['mission_batches'])):
-        frame.loc[i] = [log_for_knapsack.loc[user_id]['mission_batches'][i]['expected_rating'], log_for_knapsack.loc[user_id]['mission_batches'][i]['total_cost'], log_for_knapsack.loc[user_id]['mission_batches'][i]['mission_id']]
-        
+        frame.loc[i] = [log_for_knapsack.loc[user_id]['mission_batches'][i]['expected_rating'],
+                        log_for_knapsack.loc[user_id]['mission_batches'][i]['total_cost'],
+                        log_for_knapsack.loc[user_id]['mission_batches'][i]['mission_id']]
+
     print(frame)
     print()
         
@@ -787,8 +796,13 @@ def get_knapsack(R_hat, users_idx, log_for_knapsack):
 
         target_user_rating = copy.deepcopy(R_hat.loc[target_user_id])
         for i in target_user_rating.index:
-            if isNaN(target_user_rating[i]) == True:
-                target_user_rating.drop(i, inplace = True)
+            if (target_user_rating[i] == None) or (target_user_rating[i] == "Done"):
+                target_user_rating.drop(i, inplace=True)
+
+        if target_user_rating.index.size == 0:
+            knapsack.loc[target_user_id]['daily_missions'] = None
+            log_for_knapsack.loc[target_user_id] = None
+            continue
 
         mission_id = list(target_user_rating.index)
         expected_R  = list(target_user_rating)
