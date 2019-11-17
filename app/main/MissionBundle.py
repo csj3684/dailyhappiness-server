@@ -4,7 +4,7 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for,jsonify
 from flask import current_app as app
 from app.main.DB import DB
-
+import pymysql
 import pandas as pd
 from collections import OrderedDict
 from app.main.knapsack_with_algorithms import getKnapsack
@@ -19,23 +19,44 @@ cron job 에서 매일 월요일 아침에 호출
 '''
 @missionBundlePage.route('/set', methods=['GET', 'POST'])
 def setMissionBundle():
+    pd.set_option('display.max_columns', 500)
     print("setMissionBundle 함수 호출")
+    '''
+    각 유저별로 knapsack을 가져온다.
+    '''
 
-    '''
-    expectRatings() 함수에서 예상 점수로 꽉 찬 2차원 리스트를 받는다.
-    '''
+
     knapsack = getKnapsack()
-    print(knapsack)
+    print(knapsack.loc[67]['daily_missions']['expected_rating'])
 
-    '''
-    knapsack으로 예측하는 부분
-    '''
-
+    DB.dbConnect()
+    DB.setCursorDic()
 
     '''
     데이터베이스에 Mission Bundle에 저장하는 부분
     '''
+    print( knapsack.index.values[:])
+    for user in knapsack.index.values[:]:
+        if knapsack.loc[user]['daily_missions']!=None:
+            print(knapsack.loc[user])
+            for i in range(len(knapsack.loc[user]['daily_missions']['mission_id'])):
+                missionID = knapsack.loc[user]['daily_missions']['mission_id'][i]
+                if str(type(knapsack.loc[user]['daily_missions']['expected_rating']))=="<class 'int'>" or str(type(knapsack.loc[user]['daily_missions']['expected_rating']))=="<class 'float'>":
+                    expectedRating = knapsack.loc[user]['daily_missions']['expected_rating']
+                else:
+                    expectedRating = knapsack.loc[user]['daily_missions']['expected_rating'][i]
+                order = i+1
+                index = str(user)+"."+str(order)
+                print("index:",index,"missionID: ",missionID.item(),", user : ",user.item(),"order: ",order,", expectedRating: ", expectedRating)
+                sql = "INSERT INTO MissionBundle(userAndOrder, userIndex, missionOrder, missionIndex, expectedRating) VALUES(%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE missionIndex=%s, expectedRating = %s "
+                try:
 
+                    DB.curs.execute(sql,(index, user.item(), order,missionID.item(),expectedRating,missionID.item(),float(expectedRating)))
+                    DB.conn.commit()
+                except pymysql.Error as e:
+                    print("Error %d: %s" % (e.args[0], e.args[1]))
+
+    DB.dbDisconnect()
     return 'abc'
 
 
@@ -70,14 +91,8 @@ def getMissionBundle():
         print("missionIndex, missionName 가져오기 오류 , ",e);
     # -----------------------------------------------------------------
 
-    #missionOrder 하나 증가시킴
-    sql = f"UPDATE User set missionOrder=missionOrder+1 WHERE userIndex = {_userIndex}"
-    try:
-        DB.curs.execute(sql)
-        DB.conn.commit()
-    except Exception as e:
-        print("missionOrder 증가 오류 , ",e);
 
+    DB.dbDisconnect()
     print(row)
     return json.dumps(row).encode('utf-8')
 
@@ -110,3 +125,10 @@ def incrementMission():
         DB.conn.commit()
     except Exception as e:
         print("missionOrder 증가 오류 , ",e)
+
+    DB.dbDisconnect()
+
+
+
+
+
