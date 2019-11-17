@@ -4,4 +4,7 @@
     <option name="languageLevel" value="ES6" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.6.8 (sftp://ubuntu@52.78.108.115:22/usr/bin/python3)" project-jdk-type="Python SDK" />
+  <component name="PyCharmProfessionalAdvertiser">
+    <option name="shown" value="true" />
+  </component>
 </project>
