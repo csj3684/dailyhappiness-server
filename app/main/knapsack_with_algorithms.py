@@ -53,14 +53,18 @@ def show_R_hat_log(log_for_R_hat, method, user_id, mission_id):
 
 
 def show_knapsack(knapsack):
+
     for i in knapsack.index:
-        print(i, "\tg :", round(knapsack.loc[i]['daily_missions']['expected_rating'], 2), "\tcost :",
-              round(knapsack.loc[i]['daily_missions']['total_cost'], 2), "\tmissions :",
-              knapsack.loc[i]['daily_missions']['mission_id'])
+        if knapsack.loc[i]['daily_missions'] != None:
+            print(i, "\tg :", round(knapsack.loc[i]['daily_missions']['expected_rating'], 2), "\tcost :",
+                  round(knapsack.loc[i]['daily_missions']['total_cost'], 2), "\tmissions :",
+                  knapsack.loc[i]['daily_missions']['mission_id'])
     print()
 
 
 def show_user_knapsack(log_for_knapsack, user_id):
+    if log_for_knapsack.loc[user_id] == None:
+        return;
     print("user ID : ", user_id, "\nlimited cost : ", log_for_knapsack.loc[user_id]['limited_cost'], "\nN : ",
           log_for_knapsack.loc[user_id]['N'])
     print()
@@ -70,7 +74,7 @@ def show_user_knapsack(log_for_knapsack, user_id):
                         log_for_knapsack.loc[user_id]['mission_batches'][i]['total_cost'],
                         log_for_knapsack.loc[user_id]['mission_batches'][i]['mission_id']]
 
-    print(frame)
+    #print(frame)
     print()
 
 
@@ -208,7 +212,7 @@ class MatrixFactorization():
         """
         print fit results
         """
-
+        '''
         print("User Latent P:")
         print(self._P)
         print("Item Latent Q:")
@@ -225,7 +229,7 @@ class MatrixFactorization():
         print(self.get_complete_matrix())
         print("Final RMSE:")
         print(self._training_process[self._epochs - 1][1])
-
+        '''
 
 # Regression 함수들
 
@@ -462,7 +466,7 @@ def show_progress(current_sack, g, accumulated_cost, missions, i):
     global time_min
     global time_max
     global sacks
-
+    '''
     if sacks.index.size == 0:
         print("sacks : empty")
     else:
@@ -490,6 +494,7 @@ def show_progress(current_sack, g, accumulated_cost, missions, i):
     print("accumulated_cost : ", accumulated_cost)
 
     print("best : ", best)
+    '''
 
 
 # sacks = dataFrame, current_sack = [], missions = dataFrame
@@ -576,11 +581,11 @@ def get_daily_missions_sacks(T_min, T_max, weekly_limited_cost, weekly_item_num)
     mission = pd.DataFrame(index=mission_id, columns=['expected_R', 'required_time', 'required_cost', 'R_per_cost'])
 
     for i in range(len(mission_id)):
-        print(expected_R[i])
-        print(required_time[i])
-        print(required_cost[i])
-        print((float)(expected_R[i]) / required_cost[i])
-        print([expected_R[i], required_time[i], required_cost[i], (float)(expected_R[i]) / required_cost[i]])
+        #print(expected_R[i])
+        #print(required_time[i])
+        #print(required_cost[i])
+        #print((float)(expected_R[i]) / required_cost[i])
+        #print([expected_R[i], required_time[i], required_cost[i], (float)(expected_R[i]) / required_cost[i]])
         mission.loc[mission_id[i]] = [expected_R[i], required_time[i], required_cost[i],
                                       (float)(expected_R[i]) / required_cost[i]]
 
@@ -753,7 +758,12 @@ def get_R_hat_by_KNN(R, k, users_idx, missions_idx, data_num, log_for_R_hat, use
                                                                                     target_user_id, target_mission_id)
 
             # print(log.loc[target_user_id][target_mission_id][0])
-
+    '''
+    for i in R.index:
+        for j in R.columns:
+            if R.loc[i][j]['rating'] != -1:
+                R_hat.loc[i][j] = "DONE"
+    '''
     return R_hat
 
 
@@ -792,8 +802,13 @@ def get_knapsack(R_hat, users_idx, log_for_knapsack):
 
         target_user_rating = copy.deepcopy(R_hat.loc[target_user_id])
         for i in target_user_rating.index:
-            if isNaN(target_user_rating[i]) == True:
+            if (target_user_rating[i] == None) or (target_user_rating[i] == "Done"):
                 target_user_rating.drop(i, inplace=True)
+
+        if target_user_rating.index.size == 0:
+            knapsack.loc[target_user_id]['daily_missions'] = None
+            log_for_knapsack.loc[target_user_id] = None
+            continue
 
         mission_id = list(target_user_rating.index)
         expected_R = list(target_user_rating)
@@ -827,7 +842,8 @@ def getKnapsack():
     pd.set_option('display.max_rows', 1500)
     data = getEvaluation()
     #print(data)
-
+    global users_id
+    global missions_id
     users_id = data.loc[:, 'users_id']
     missions_id = data.loc[:, 'missions_id']
     weather = data.loc[:, 'weather']
@@ -852,7 +868,7 @@ def getKnapsack():
         R.loc[users_id.iloc[i]][missions_id.iloc[i]] = {'weather': weather.iloc[i], 'temperature': temperature.iloc[i], 'rating': rating.iloc[i]}
     #print(R)
     R_hat = get_R_hat_by_KNN(R, 3, users_idx, missions_idx, data_num, log_for_R_hat, users_id, missions_id)
-    print(R_hat)
+    #print(R_hat)
     # print("R_hat 구하기 : ",time.time() - start, "초")
 
     # knapsack 뭉치를 여러개 구한다.
@@ -867,6 +883,7 @@ def getKnapsack():
 
     # for i in range(5):
     #    show_user_knapsack(log_for_knapsack, users_idx[i])
+    #print(knapsack)
 
     return knapsack
 
