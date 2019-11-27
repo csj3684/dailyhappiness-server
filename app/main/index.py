@@ -14,3 +14,13 @@ def index():
       return render_template('/main/index.html')
 
 
+@main.route('/image', methods=['GET'])
+def image():
+    # /main/index.html은 사실 /project_name/app/templates/main/index.html을 가리킵니다.
+    print("image 함수 호출")
+    #print(request.form)
+    filename = "/static/img/"+request.args.get('filename')
+    return render_template('/main/image.html', filename = filename)
+
+
+
