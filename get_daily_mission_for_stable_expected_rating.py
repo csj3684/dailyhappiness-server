@@ -27,15 +27,6 @@ def isNaN(a):
 
 
 def get_classified_R(user_id, mission_id, weather_category, temperature_min, temperature_max, R_user_id, R_mission_id, R_weather, R_temperature, R_rating, R_data_num):
-    # user_id = [string, ...] : 중복 없음
-    # mission_id = [string, ...] : 중복 없음
-    # R_weather_category = [string, ...]
-    # R_user_id = [string, ...]
-    # R_mission_id = [string, ...]
-    # R_temperature = [float, ...]
-    # R_rating = [int, ...]
-    # R_data_num = int
-    
     
     classified_R = pd.DataFrame(index = weather_category, columns = ['value'])
     for weather in classified_R.index:
@@ -75,8 +66,191 @@ def get_init_classified_R_hat(classified_R):
         
     return init_classified_R_hat
 
+def get_init_log(weather_category, user_id, mission_id):
+    init_log = pd.DataFrame(index = ['regression', 'knn', 'matrix_completion'], columns = weather_category)
+    for method in init_log.index:
+        for weather in weather_category:
+            init_log.loc[method][weather] = pd.DataFrame(index = user_id, columns = mission_id)
+    return init_log
+
 
 # In[3]:
+
+
+def get_coefficient(ols_result):
+    coef = pd.DataFrame()
+    coef['coefficient'] = ols_result.params
+    return coef
+    
+def get_std_err(ols_result):
+    std_err = pd.DataFrame()
+    std_err['standard error'] = ols_result.bse
+    return std_err
+    
+def get_t_statictics(ols_result):
+    t_statistics = pd.DataFrame()
+    t_statistics['t statistics'] = ols_result.tvalues
+    return t_statistics
+        
+def get_vif(indep_variables):
+    vif = pd.DataFrame()
+    vif["VIF factor"] = [variance_inflation_factor(indep_variables.values, i) for i in range(indep_variables.shape[1])]
+    vif["features"] = indep_variables.columns
+    return vif
+
+def get_formula(target, formula):
+    FORMULA = target + ' ~ ' + formula[0]
+    for i in range(1, len(formula)):
+        FORMULA +=  (' + ' + formula[i])
+    return FORMULA
+
+def get_p_value(ols_result):
+    p_value = pd.DataFrame()
+    p_value['p_value'] = result.pvalues
+    return p_value
+
+
+# In[4]:
+
+
+def get_classified_R_hat_by_Regression(classified_R, Log):
+
+    classified_R_hat = get_init_classified_R_hat(classified_R)
+    
+    
+    for weather in classified_R_hat.index:
+        R = classified_R.loc[weather]['value']
+        for i in R.index:
+            for j in R.columns:
+                Log.loc['regression'][weather].loc[i][j] = pd.DataFrame(index = ['ols_result', 'vif'], columns = ['value'], data = [[[]],[[]]])    
+        R_hat = classified_R_hat.loc[weather]['value']
+        R_refer = copy.deepcopy(R)
+        R_refer_for_regression = copy.deepcopy(R)
+
+        for user in R.index:
+            target_user = user
+                    
+            experienced_mission = []
+            unexperienced_mission = []
+            for mission in R.loc[target_user].index:
+                if R.loc[target_user][mission] == -1:
+                    unexperienced_mission.append(mission)
+                else:
+                    experienced_mission.append(mission)
+            
+            indep_user_idx = pd.DataFrame(index = R.index, columns = ['idx'])
+            indep_user_idx.drop(target_user, inplace = True)
+
+            for indep_user in indep_user_idx.index:                                    # target user의 경험을 완전히 포함하지 못하는 user 제거
+                for mission in experienced_mission: 
+                    if (R.loc[indep_user][mission] == -1) or (R.loc[indep_user][mission] == 'Done'):
+                        indep_user_idx.drop(indep_user, inplace = True)                
+                        break;
+                        
+            if indep_user_idx.index.size == 0:
+                continue
+                
+            for mission in R_refer_for_regression.columns:                                   
+                if R.loc[target_user][mission] == -1:
+                    R_refer_for_regression.drop(mission, axis = 1, inplace = True)      # target user 가 안해본 mission 제거 
+            
+            for mission in unexperienced_mission:
+                target_mission = mission
+                user_have_not_done_target_mission = []
+
+                for indep_user in indep_user_idx.index:
+                    if (R.loc[indep_user][target_mission] == -1) or (R.loc[indep_user][mission] == 'Done'):
+                        user_have_not_done_target_mission.append(indep_user)
+                        indep_user_idx.drop(indep_user, inplace = True)           # target_mission 을 안해본 user 제거 
+
+                if (indep_user_idx.index.size == 0) or (R_refer_for_regression.columns.size == 0):
+                    for user in user_have_not_done_target_mission:          # target mission 을 안해봐서 제거된 user 복구
+                        indep_user_idx.loc[user] = None
+                    continue;       
+                    
+                formula = copy.deepcopy(list(R_refer_for_regression.columns))    
+                    
+                R_refer_for_regression.loc[:, target_mission] = R_refer.loc[:, target_mission] # target mission 복구
+
+                available = False
+                breaker = False
+                
+                while available == False:
+                    if formula == []:
+                        breaker = True
+                        Log.loc['regression'][weather].loc[target_user, target_mission].loc['vif', 'value'].append(vif)
+                        break
+                    available = True
+                    FORMULA = get_formula(target_mission, formula)
+                    
+                    R_for_regression = pd.DataFrame(index = indep_user_idx.index, columns = R_refer_for_regression.columns)
+                    for user in R_for_regression.index:                       # 회귀에 필요한 미션과 유저들로 DataFrame 생성
+                        R_for_regression.loc[user] = R_refer_for_regression.loc[user]
+
+                    y, X = dmatrices(FORMULA, R_for_regression, return_type = 'dataframe')
+                    vif = get_vif(X)
+                    Log.loc['regression'][weather].loc[target_user, target_mission].loc['vif', 'value'].append(vif)
+                    for i in vif.index[1:]:
+                        if float(vif.loc[i, 'VIF Factor']) > 10:
+                            available = False
+                            formula.remove(vif.loc[i, 'feature'])
+                            
+                if breaker == True:
+                    R_hat.loc[target_user_id][target_mission] = None
+                    R_refer_for_regression.drop(target_mission, axis = 1, inplace = True) # target mission 삭제
+                    for i in user_have_not_done_target_mission:                           # target mission 을 안해봐서 제거된 user 복구
+                            indep_user_idx.loc[i] = None        
+                    continue
+                    
+                available = False          
+
+                while available == False:
+                    if formula == []:
+                        breaker = True
+                        Log.loc['regression'][weather].loc[target_user, target_mission].loc['ols_result', 'value'].append(ols_result)
+                        break
+                    available = True
+                    FORMULA = get_formula(target_mission, formula)
+                    ols_result = smf.ols(FORMULA, data = R_for_regression).fit()
+                    p_value = get_p_value(result)
+                    Log.loc['regression'][weather].loc[target_user, target_mission].loc['ols_result', 'value'].append(ols_result)
+                    for i in p_value.index[1:]:
+                        if p_value.loc[i, 'p_value'] > 0.1:
+                            available = False
+                            formula.remove(i)
+                            
+                if breaker == True:
+                    R_hat.loc[target_user_id][target_mission] = None
+                    R_refer_for_regression.drop(target_mission, axis = 1, inplace = True) # target mission 삭제
+                    for i in user_have_not_done_target_mission:                           # target mission 을 안해봐서 제거된 user 복구
+                            indep_user_idx.loc[i] = None        
+                    continue
+                
+                parameters = copy.deepcopy(ols_result.params)
+                expected_Y = parameters.loc['Intercept']
+                parameters.drop('Intercept', inplace = True)
+
+                for k in parameters.keys():
+                    expected_Y += ( R_refer.loc[target_user_id][k] * parameters.loc[k] ) 
+
+                R_hat.loc[target_user][target_mission] = expected_Y
+
+                R_refer_for_regression.drop(target_mission, axis = 1, inplace = True) # target mission 삭제
+                for i in user_have_not_done_target_mission:               # target mission 을 안해봐서 제거된 user 복구
+                        indep_user_idx.loc[i] = None
+
+            for k in unexperienced_mission:                                  
+                R_refer_for_regression.loc[:, k] = R_refer.loc[:, k]           # target user 가 안해본 mission 복구
+
+        for i in R_hat.index:
+            for j in R_hat.columns:
+                if R_hat.loc[i][j] < 0 :
+                    R_hat.loc[i][j] = 0
+    
+    return classified_R_hat
+
+
+# In[5]:
 
 
 # KNN 함수들
@@ -280,7 +454,7 @@ def find_k_nearest(ratings, distances_and_weights, user_idx, weight_tolerance):
     return k_nearest
 
 
-# In[4]:
+# In[6]:
 
 
 def get_classified_R_hat_by_KNN(classified_R):
@@ -291,7 +465,7 @@ def get_classified_R_hat_by_KNN(classified_R):
         start3 = time.time()
         R = classified_R.loc[weather]['value']
         R_hat = classified_R_hat.loc[weather]['value']
-        
+    
         D = get_D(R)
 
         #print(D)
@@ -362,7 +536,7 @@ def get_classified_R_hat_by_KNN(classified_R):
     return classified_R_hat
 
 
-# In[5]:
+# In[7]:
 
 
 class MatrixFactorization():
@@ -508,7 +682,7 @@ def get_classified_R_hat_by_MatrixCompletion(classified_R):
     return classified_R_hat
 
 
-# In[6]:
+# In[8]:
 
 
 # 주간 시작 전처리
@@ -552,7 +726,7 @@ def get_g_plus_h(check_point, weather_condition, applicable_missions, real_g, mi
         i += 1
 
         if current_sack.index.size == N: # 7번째까지 다 담고 남아있는 cost에 대해 마지막 g/c로 다채우기
-            h += (((weekly_cost - accumulated_cost) / cost) * g)
+            h += min(10, (((weekly_cost - accumulated_cost) / cost) * g))
             return real_g + h
 
         if i == applicable_missions.index.size:
@@ -570,6 +744,9 @@ def get_applicable_weekly_mission_set(weather_condition, user_id, mission_info, 
   
     global weekly_mission_set_candidate, best
     
+    #print("current_sack : ", current_sack)
+    #print("\n")
+    
     if current_sack.index.size == N:
         #print("sack size 도달")
         candidate_set = pd.DataFrame(data=[[copy.deepcopy(current_sack), g, accumulated_cost]], columns=['mission_set', 'total_g', 'total_cost'])
@@ -577,7 +754,8 @@ def get_applicable_weekly_mission_set(weather_condition, user_id, mission_info, 
         weekly_mission_set_candidate = weekly_mission_set_candidate.reset_index(drop=True)
         if g > best:
             best = g
-
+        #print("current_sack : ", current_sack)
+        #print("\n")
         return
 
     if i == applicable_missions.index.size:
@@ -589,16 +767,17 @@ def get_applicable_weekly_mission_set(weather_condition, user_id, mission_info, 
         weekly_mission_set_candidate = weekly_mission_set_candidate.reset_index(drop=True)
         if g > best:
             best = g
+        #print("current_sack : ", current_sack)
+        #print("\n")    
         return
    
-    
     mission_id = applicable_missions.iloc[i]['mission_id']
     required_cost = mission_info.loc[mission_id]['cost']
     expected_R = applicable_missions.iloc[i]['g']
     weather = applicable_missions.iloc[i]['weather']
     required_weather_num = weather_condition.loc[weather]['value']
     
-
+    
     if accumulated_cost + required_cost < weekly_cost:
         if required_weather_num > 0:
             if (mission_id in current_sack.index) == False:
@@ -609,8 +788,9 @@ def get_applicable_weekly_mission_set(weather_condition, user_id, mission_info, 
                 virtual_weather_condition = copy.deepcopy(weather_condition)
                 check_point = pd.DataFrame(columns = ['index', 'accumulated_cost', 'weather_condition', 'current_sack', 'h'])
                 g_plus_h = get_g_plus_h(check_point, virtual_weather_condition, applicable_missions, g, mission_info, virtual_idx, weekly_cost, virtual_accmulated_cost, virtual_current_sack, 0, N)
+                #print("g+h", g_plus_h)
+                #print("best", best)
                 
-               
                 if g_plus_h < best:
                     return
 
@@ -630,11 +810,9 @@ def get_applicable_weekly_mission_set(weather_condition, user_id, mission_info, 
                 #print("미션이 이미 있어요")
         else:
             ("")
-            #print("날씨가 다 찼어요")
-        
+            #print("날씨가 다 찼어요
     else:
         ("")
-
         #print(mission_id, "못넣음 : cost 초과")
     
     #print("current_sack 탈출방면")
@@ -691,7 +869,7 @@ def get_applicable_missions(user_id, classified_R_hat, user_info, mission_info, 
     
 
 
-# In[7]:
+# In[9]:
 
 
 def set_user_applicable_missions(user_id, classified_R_hat, user_info, mission_info, weekly_weather):
@@ -735,7 +913,6 @@ def set_daily_missions(user_id, user_info, mission_info, today_idx, weekly_weath
     for weather in weather_condition.index:
         weather_condition.loc[weather] = [sum(adjusted_weekly_weather.loc[weather])]
     
-    
     weekly_mission_set_candidate = get_weekly_mission_set_candidate(weather_condition, applicable_missions, user_id, mission_info, cost, item_num)
 
     if weekly_mission_set_candidate.index.size == 0:
@@ -757,11 +934,132 @@ def get_daily_mission(user_id, user_info, today_weather):
     for mission in daily_missions.index:
         if daily_missions.loc[mission]['weather'] == today_weather:
             return mission
+        
+def set_minimum_cost_mission_set(weather_condition, mission_info, applicable_missions, current_sack, g, accumulated_cost, i, N):
+    global minimum_cost_mission_set, best_min
+        
+    if current_sack.index.size == N:
+        candidate_set = pd.DataFrame(data=[[copy.deepcopy(current_sack), g, accumulated_cost]], columns=['mission_set', 'total_g', 'total_cost'])
+        minimum_cost_mission_set = minimum_cost_mission_set.append(candidate_set)
+        minimum_cost_mission_set = minimum_cost_mission_set.reset_index(drop=True)
+        if accumulated_cost < best_min:
+            best_min = accumulated_cost
+        """print("cost", accumulated_cost)
+        print("best", best_min)
+        print("current_sack")
+        print(current_sack, end = "\n\n\n")"""
+        return
 
+    if i == applicable_missions.index.size:
+        if len(current_sack) < 7:
+            return
+        candidate_set = pd.DataFrame(data=[[copy.deepcopy(current_sack), g, accumulated_cost]], columns=['mission_set', 'total_g', 'total_cost'])
+        minimum_cost_mission_set = minimum_cost_mission_set.append(candidate_set)
+        minimum_cost_mission_set = minimum_cost_mission_set.reset_index(drop=True)
+        if accumulated_cost < best_min:
+            best_min = accumulated_cost
+        """print("cost", accumulated_cost)
+        print("best", best_min)
+        print("current_sack")
+        print(current_sack, end = "\n\n\n")"""
+        return
+    
+    
+    virtual_idx = i
+    virtual_accumulated_cost = accumulated_cost
+    virtual_weather_condition = copy.deepcopy(weather_condition)
+    virtual_current_size = current_sack.index.size
+    virtual_current_sack = list(current_sack.index)
+    
+    while (virtual_current_size < N) and (virtual_idx < applicable_missions.index.size):
+        virtual_mission_id = applicable_missions.iloc[virtual_idx]['mission_id']
+        virtual_required_cost = mission_info.loc[virtual_mission_id]['cost']
+        virtual_weather = applicable_missions.iloc[virtual_idx]['weather']
+        virtual_required_weather_num = virtual_weather_condition.loc[virtual_weather]['value']
+        
+        if virtual_required_weather_num > 0:
+            if (virtual_mission_id in virtual_current_sack) == False:
+                virtual_accumulated_cost += virtual_required_cost
+                virtual_weather_condition.loc[virtual_weather]['value'] -= 1
+                virtual_current_size += 1
+                virtual_current_sack.append(virtual_mission_id)
+        
+        virtual_idx += 1
+        
+    mission_id = applicable_missions.iloc[i]['mission_id']
+    required_cost = mission_info.loc[mission_id]['cost']
+    expected_R = applicable_missions.iloc[i]['g']
+    weather = applicable_missions.iloc[i]['weather']
+    required_weather_num = weather_condition.loc[weather]['value']    
+        
+    """print("cost", accumulated_cost)
+    print("virtual_accumulated_cost", virtual_accumulated_cost)
+    print("best", best_min)
+    print("current_sack")
+    print(current_sack, end = "\n\n\n")  """  
+        
+    if virtual_current_size < N:
+        return
+    
+    if virtual_accumulated_cost > best_min:
+        return
+    
+    if required_weather_num > 0:
+        if (mission_id in current_sack.index) == False:
+            
+            g += expected_R
+            accumulated_cost += required_cost
+            weather_condition.loc[weather]['value'] -= 1
+            current_sack.loc[mission_id] = [weather, expected_R, required_cost]
+
+            set_minimum_cost_mission_set(weather_condition, mission_info, applicable_missions, current_sack, g, accumulated_cost, i + 1, N)
+
+            g -= expected_R
+            accumulated_cost -= required_cost
+            weather_condition.loc[weather]['value'] += 1
+            current_sack.drop(mission_id, inplace = True)
+            
+    set_minimum_cost_mission_set(weather_condition, mission_info, applicable_missions, current_sack, g, accumulated_cost, i + 1, N)
+
+    
+def get_minimum_cost_mission_set(target_user_id, user_info, mission_info, today_idx, weekly_weather):
+    applicable_missions = user_info.loc[target_user_id]['applicable_missions']
+    applicable_missions = applicable_missions.sort_values(by = 'cost')
+    
+    global minimum_cost_mission_set, best_min
+    
+    best_min = float('inf')
+    
+    minimum_cost_mission_set = pd.DataFrame(columns=['mission_set', 'total_g', 'total_cost'])
+    
+    item_num = 7 - today_idx
+    
+    adjusted_weekly_weather = copy.deepcopy(weekly_weather)
+    for i in range(today_idx):
+        day = weekly_weather.columns[i]
+        adjusted_weekly_weather.drop(day, axis = 1, inplace = True)
+        
+    weather_condition = pd.DataFrame(index = weekly_weather.index, columns = ['value'])
+    for weather in weather_condition.index:
+        weather_condition.loc[weather] = [sum(adjusted_weekly_weather.loc[weather])]
+    
+    current_sack = pd.DataFrame(columns = ['weather', 'g', 'cost'])
+    
+    set_minimum_cost_mission_set(weather_condition, mission_info, applicable_missions, current_sack, 0, 0, 0, item_num)
+
+    if minimum_cost_mission_set.index.size == 0:
+        return None
+    
+    minimum_cost_mission_set = minimum_cost_mission_set.sort_values(by = "total_cost")
+    
+    return pd.DataFrame(minimum_cost_mission_set.iloc[0]).T, minimum_cost_mission_set
+    
+    #return pd.DataFrame(minimum_cost_mission_set.iloc[minimum_cost_mission_set.index.size - 1]).T, minimum_cost_mission_set
+    
     
 
 
-# In[9]:
+# In[11]:
 
 
 #ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ#    
@@ -814,9 +1112,9 @@ R_rating = data.loc[:,'rating']
 R_data_num = len(R_user_id)
 
 
-classified_R = get_classified_R(user_id, mission_id, weather_category, temperature_min, temperature_max, R_user_id, R_mission_id, R_weather, R_temperature, R_rating, R_data_num)
+log = get_init_log(weather_category, user_id, mission_id)
 
-classified_R.loc['sunny']['value']
+classified_R = get_classified_R(user_id, mission_id, weather_category, temperature_min, temperature_max, R_user_id, R_mission_id, R_weather, R_temperature, R_rating, R_data_num)
 
 start1 = time.time()
 
@@ -825,7 +1123,7 @@ classified_R_hat = get_classified_R_hat_by_KNN(classified_R)
 print(time.time() - start1)
 
 
-# In[10]:
+# In[12]:
 
 
 weathers = ["snowy", "sunny", "rainy", "cloudy", "snowy", "snowy", 'snowy']
@@ -836,14 +1134,13 @@ for day_idx in range(weekly_weather.columns.size):
     weekly_weather.loc[weather][day_idx] = 1
 
 
-# In[11]:
+# In[13]:
 
 
 target_user_id = 'u5'
-user_info.loc[target_user_id]['cost'] = 300
 
 
-# In[12]:
+# In[14]:
 
 
 today_idx = 0
@@ -851,7 +1148,7 @@ mission_ing = False
 ERROR = False
 
 
-# In[13]:
+# In[15]:
 
 
 # 주간 시작 전처리 #
@@ -862,7 +1159,53 @@ else:
     ERROR = False
 
 
+# In[16]:
+
+
+user_info.loc[target_user_id, 'applicable_missions'].sort_values(by = 'cost')
+
+
+# In[17]:
+
+
+start = time.time()
+minimum_cost_mission_set, b = get_minimum_cost_mission_set(target_user_id, user_info, mission_info, today_idx, weekly_weather)
+print(time.time()-start)
+
+
 # In[18]:
+
+
+minimum_cost_mission_set.iloc[0]['mission_set']
+
+
+# In[19]:
+
+
+minimum_cost = b.iloc[0].loc['total_cost']
+print("minimum_cost", minimum_cost)
+b
+b.iloc[0].loc['mission_set']
+
+
+# In[20]:
+
+
+user_info.loc[target_user_id]['cost'] = 114
+
+
+# In[21]:
+
+
+# 주간 시작 전처리 #
+if set_user_applicable_missions(target_user_id, classified_R_hat, user_info, mission_info, weekly_weather) == False:
+    ERROR = True
+    print("applicable_missions이 없어요.")
+else:
+    ERROR = False
+
+
+# In[19]:
 
 
 # 주간 첫 시작 or 사용자가 미션 넘겼을 때
@@ -886,10 +1229,14 @@ else:
    
         print(time.time() - start)
 
-user_info.loc[target_user_id]['weekly_missions'].iloc[0].loc["mission_set"]
+
+# In[20]:
 
 
-# In[15]:
+user_info.loc[target_user_id]['weekly_missions'].iloc[0].loc["mission_set"].sort_values(by = 'cost')
+
+
+# In[21]:
 
 
 # daily_mission 받기 
@@ -915,7 +1262,7 @@ else:
             print("이미 보유중인 미션이 있어요")
 
 
-# In[16]:
+# In[22]:
 
 
 if ERROR == True:
@@ -939,7 +1286,7 @@ else:
         mission_ing = False
 
 
-# In[19]:
+# In[23]:
 
 
 user_info.loc[target_user_id]['weekly_missions'].iloc[0].loc["mission_set"]
@@ -949,4 +1296,287 @@ user_info.loc[target_user_id]['weekly_missions'].iloc[0].loc["mission_set"]
 
 
 
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[161]:
+
+
+a = pd.DataFrame(index = [1, 2], columns = ['a'], data = [[[]],[[]]])
+
+a.loc[1, 'a'].append(1)
+a
+
+
+# In[52]:
+
+
+formula = ['X1','X2','X3','X4','X5','X6','X7']
+    
+target_mission = 'Y'
+
+FORMULA = get_formula(target_mission, formula)
+
+y, X = dmatrices(FORMULA, data, return_type = 'dataframe')
+
+vif = pd.DataFrame()
+vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+vif["feature"] = X.columns 
+vif
+
+
+# In[82]:
+
+
+data = pd.read_csv('/home/csj3684/2019_2/capstone_project/Test_data/untitled.csv', engine='python')
+
+formula = ['X1','X2','X3','X4','X5','X6','X7']
+    
+target_mission = 'Y'
+
+available = False
+
+while available == False:
+    if formula == []:
+        break
+    available = True
+    FORMULA = get_formula(target_mission, formula)
+    y, X = dmatrices(FORMULA, data, return_type = 'dataframe')
+    vif = pd.DataFrame()
+    vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+    vif["feature"] = X.columns 
+
+    for i in vif.index[1:]:
+        if float(vif.loc[i, 'VIF Factor']) > 3:
+            available = False
+            formula.remove(vif.loc[i, 'feature'])
+            
+available = False          
+
+while available == False:
+    if formula == []:
+        result = None
+        break
+    available = True
+    FORMULA = get_formula(target_mission, formula)
+    result = smf.ols(FORMULA, data = data).fit()
+    p_value = get_p_value(result)
+    for i in p_value.index[1:]:
+        if p_value.loc[i, 'p_value'] > 0.1:
+            available = False
+            formula.remove(i)
+
+if result != None:
+    print(result.summary())
+
+
+# In[124]:
+
+
+data = pd.read_csv('/home/csj3684/2019_2/capstone_project/Test_data/untitled.csv', engine='python')
+
+formula = ['X1']#,'X2','X3','X4','X5','X6','X7']
+    
+target_mission = 'Y'
+FORMULA = get_formula(target_mission, formula)
+y, X = dmatrices(FORMULA, data, return_type = 'dataframe')
+vif = pd.DataFrame()
+print(X.shape[1])
+print(X.values)
+vif["VIF Factor"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+vif["feature"] = X.columns 
+vif
+FORMULA
+print(X)
+
+
+# In[100]:
+
+
+for i in range(1):
+    print(i)
+
+
+# In[ ]:
+
+
+def get_classified_R_hat_by_Regression(classified_R):
+    # R_hat = DataFrame : index = user_id, columns = mission_id, data = rating : float
+    # indep_user_idx = DataFrame : index = user_id, columns = ['idx'], data = None 
+    # -> R_refer_for_regression == R_hat
+    # -> R_for_regression = DataFrame : index = indep_user_dix.index, columns = mission_id
+    # log_for_R_hat = DataFrame : index = ['regression', 'KNN', 'matrix_completion'], columns = ['value'], data =[data_frame, -, -]
+    # -> data_frame = DataFrame : index = user_id, columns = mission_id, data = ols_result.summary()
+    
+    classified_R_hat = get_init_classified_R_hat(classified_R)
+    
+    for weather in classified_R_hat.index:
+    
+        R = classified_R.loc[weather]['value']
+        R_hat = classified_R_hat.loc[weather]['value']
+        R_refer = copy.deepcopy(R)
+        R_refer_for_regression = copy.deepcopy(R)
+
+        for user in R.index:
+            target_user = user
+            #print(weather)
+            print(target_user)
+                    
+            experienced_mission = []
+            unexperienced_mission = []
+            for mission in R.loc[target_user].index:
+                if R.loc[target_user][mission] == -1:
+                    unexperienced_mission.append(mission)
+                else:
+                    experienced_mission.append(mission)
+       
+            print(experienced_mission)
+            
+            indep_user_idx = pd.DataFrame(index = R.index, columns = ['idx'])
+            indep_user_idx.drop(target_user, inplace = True)
+
+            for indep_user in indep_user_idx.index:                                    # target user의 경험을 완전히 포함하지 못하는 user 제거
+                for mission in experienced_mission: 
+                    if R.loc[indep_user][mission] == -1:
+                        indep_user_idx.drop(indep_user, inplace = True)                
+                        break;
+                        
+            #print("포함 못한 user 제거indep_user_idx\n", indep_user_idx.index)
+            #print("\n\n")            
+            
+            if indep_user_idx.index.size == 0:
+                continue
+                
+            for mission in R_refer_for_regression.columns:                                   
+                if R.loc[target_user][mission] == -1:
+                    R_refer_for_regression.drop(mission, axis = 1, inplace = True)      # target user 가 안해본 mission 제거 
+            
+            #print("R_refer_for_regression.columns\n", R_refer_for_regression.columns)
+            
+            for mission in unexperienced_mission:
+                target_mission = mission
+                user_have_not_done_target_mission = []
+
+                #print(target_mission)
+                
+                for indep_user in indep_user_idx.index:
+                    if R.loc[indep_user][target_mission] == -1:
+                        user_have_not_done_target_mission.append(indep_user)
+                        indep_user_idx.drop(indep_user, inplace = True)           # target_mission 을 안해본 user 제거 
+
+                #print("안해본 user 제거indep_user_idx\n", indep_user_idx.index)
+                #print("\n\n")
+                
+                if (indep_user_idx.index.size == 0) or (R_refer_for_regression.columns.size == 0):
+                    for user in user_have_not_done_target_mission:          # target mission 을 안해봐서 제거된 user 복구
+                        indep_user_idx.loc[user] = None
+                        #print("복귀후 indep_user_idx\n", indep_user_idx.index)
+                        #print("\n\n")
+                    continue;       
+                    
+                R_refer_for_regression.loc[:, target_mission] = R_refer.loc[:, target_mission] # target mission 복구
+
+                FORMULA = get_formula(target_mission, experienced_mission) # FORMULA = "Y ~ M_1 + M_2 + ... + M_K"
+
+                R_for_regression = pd.DataFrame(index = indep_user_idx.index, columns = R_refer_for_regression.columns)
+
+                for user in R_for_regression.index:                       # 회귀에 필요한 미션과 유저들로 DataFrame 생성
+                    R_for_regression.loc[user] = R_refer_for_regression.loc[user]
+
+                #print(FORMULA)
+                #print(R_for_regression)
+                
+                ols_result, X = dmatrices(FORMULA, R_for_regression, return_type = 'dataframe')
+                
+                #ols_result = smf.ols(FORMULA, data = R_for_regression).fit()
+
+                #log.loc[target_user_id][target_mission_id] = ols_result.summary()
+
+                #vif = get_vif(indep_variables = X)
+
+                print(ols_result.summary())
+                
+                if IsAvailable(ols_result) == True:
+                    parameters = copy.deepcopy(ols_result.params)
+                    expected_Y = parameters.loc['Intercept']
+                    
+                    print(parameters.loc['Intercept'])
+                    
+                    parameters.drop('Intercept', inplace = True)
+                    
+                    for k in parameters.keys():
+                        expected_Y += ( R_refer.loc[target_user_id][k] * parameters.loc[k] ) 
+
+                    R_hat.loc[target_user][target_mission] = expected_Y
+
+                else :
+                    
+                    R_hat.loc[target_user_id][target_mission] = None
+
+                R_refer_for_regression.drop(target_mission, axis = 1, inplace = True) # target mission 삭제
+                for i in user_have_not_done_target_mission:               # target mission 을 안해봐서 제거된 user 복구
+                        indep_user_idx.loc[i] = None
+
+            for k in unexperienced_mission:                                  
+                R_refer_for_regression.loc[:, k] = R_refer.loc[:, k]           # target user 가 안해본 mission 복구
+
+        for i in R_hat.index:
+            for j in R_hat.columns:
+                if R_hat.loc[i][j] < 0 :
+                    R_hat.loc[i][j] = 0
+    
+    return classified_R_hat
 
