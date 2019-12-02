@@ -918,6 +918,7 @@ def set_weekly_mission(user_id, user_info, mission_info, today_idx, weekly_weath
     weekly_mission_set_candidate = get_weekly_mission_set_candidate(weather_condition, applicable_missions, user_id, mission_info, cost, item_num)
 
     if weekly_mission_set_candidate.index.size == 0:
+        user_info.loc[user_id]['weekly_missions'] = None
         return False
     
     weekly_mission_set_candidate = weekly_mission_set_candidate.sort_values(by = "total_g", ascending = False)
@@ -928,6 +929,9 @@ def set_weekly_mission(user_id, user_info, mission_info, today_idx, weekly_weath
     return True
 
 def get_daily_mission(user_id, user_info, today_weather):
+    if type(user_info.loc[user_id]['weekly_missions']) == type(None):
+        return user_info.loc[target_user_id]['applicable_missions'].sort_values(by = 'cost').iloc[0].loc['mission_id']
+    
     daily_missions = user_info.loc[user_id]['weekly_missions'].iloc[0].loc['mission_set']
     
     if daily_missions.index.size == 0:
