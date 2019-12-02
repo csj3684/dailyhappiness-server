@@ -877,7 +877,7 @@ def set_user_applicable_missions(target_user_id, classified_R_hat, user_info, mi
     
     return True
 
-def update_user_applicable_missions(user_id, user_info, mission_id, activity, today_idx, weekly_weather):
+def update_user_applicable_missions(user_id, user_info, mission_info, mission_id, activity, today_idx, weekly_weather):
     applicable_missions = user_info.loc[user_id]['applicable_missions']
     daily_missions = user_info.loc[user_id]['weekly_missions'].iloc[0].loc['mission_set']
     
