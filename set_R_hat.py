@@ -21,7 +21,7 @@ import datetime
 weather_category = ['sunny', 'cloudy', 'rainy', 'snowy']
 
 #data = pd.read_csv('C:/Users/CAU/Desktop/2019_2/capstone_project/Test_data/user_info_sample.csv', engine='python')
-data = pd.read_csv('Home/2019_2/capstone_project/Test_data/user_info_sample.csv', engine='python')
+data = pd.read_csv('/home/csj3684/2019_2/capstone_project/Test_data/user_info_sample.csv', engine='python')
 
 n = 30
 
@@ -38,7 +38,7 @@ for i in range(n):
 #ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ#
 
 #data = pd.read_csv('C:/Users/CAU/Desktop/2019_2/capstone_project/Test_data/mission_info_sample.csv', engine='python')
-data = pd.read_csv('Home/2019_2/capstone_project/Test_data/mission_info_sample.csv', engine='python')
+data = pd.read_csv('/home/csj3684/2019_2/capstone_project/Test_data/mission_info_sample.csv', engine='python')
 
 n = 30
 
@@ -60,7 +60,7 @@ for i in range(n):
 #ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ#
 
 #data = pd.read_csv('C:/Users/CAU/Desktop/2019_2/capstone_project/Test_data/rating_sample.csv', engine='python')
-data = pd.read_csv('Home/2019_2/capstone_project/Test_data/rating_sample.csv', engine='python')
+data = pd.read_csv('/home/csj3684/2019_2/capstone_project/Test_data/rating_sample.csv', engine='python')
 
 temperature_min = 14
 temperature_max = 26
