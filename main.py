@@ -65,6 +65,11 @@ while True:
         print(user_info.loc[target_user_id]['applicable_missions'])
     elif action == "weekly_mission":
         print(user_info.loc[target_user_id]['weekly_missions'].iloc[0].loc['mission_set'])
+    elif action == "idx":
+        print(today_idx)
+    elif action == "reset":
+        today_idx = 0
+        continue
     else:
         print("Key Error")
         continue
