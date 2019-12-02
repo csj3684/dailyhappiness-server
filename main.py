@@ -32,24 +32,35 @@ weekly_weather = functions.get_weekly_weather(weathers, weather_category)
  
 target_user_id = 'u1'
 
+today_idx = functions.datetime.datetime.today().weekday()
+ 
 while True:
     action = input()
     if action == '1': 
         print("get_applicable_mission : ", functions.set_user_applicable_missions(target_user_id, classified_R_hat, user_info, mission_info, weekly_weather))
     elif action == '2':
-        print("set_weekly_mission : ", functions.set_weekly_mission(target_user_id, user_info, mission_info, functions.get_today_idx(), weekly_weather))
+        print("set_weekly_mission : ", functions.set_weekly_mission(target_user_id, user_info, mission_info, today_idx, weekly_weather))
     elif action == '3':
         daily_mission = functions.get_daily_mission(target_user_id, user_info, today_weather)
         print("daily_mission", daily_mission)
-    elif action == '4':
-        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "done", functions.get_today_idx(), weekly_weather)
-    elif action == '5':
-        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "pass", functions.get_today_idx(), weekly_weather)
+    elif action == 'done':
+        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "done", today_idx, weekly_weather)
+        today_idx += 1
+    elif action == 'pass':
+        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "pass", today_idx, weekly_weather)
     elif action == "exit":
         break
     elif action == "switch":
         target_user_id = input()
         continue
+    elif action == "weekly_weather":
+        print(weekly_weather)
+    elif action == "daily_mission":
+        print(daily_mission)
+    elif action == "applicable_mission":
+        print(user_info.loc[target_user_id]['applicable_missions'])
+    elif action == "weekly_mission":
+        print(user_info.loc[target_user_id]['weekly_missions'].iloc[0].loc['mission_set'])
     else:
         print("Key Error")
         continue

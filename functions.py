@@ -1072,3 +1072,6 @@ def get_weekly_weather(weathers, weather_category):
         weekly_weather.loc[weather][day_idx] = 1
         
     return weekly_weather
+    
+def get_today_idx():
+    return datetime.datetime.today().weekday()
