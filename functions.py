@@ -934,6 +934,8 @@ def get_daily_mission(user_id, user_info, today_weather):
     for mission in daily_missions.index:
         if daily_missions.loc[mission]['weather'] == today_weather:
             return mission
+    
+    return False
         
 def set_minimum_cost_mission_set(weather_condition, mission_info, applicable_missions, current_sack, g, accumulated_cost, i, N):
     global minimum_cost_mission_set, best_min

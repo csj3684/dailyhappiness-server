@@ -19,7 +19,7 @@ import datetime
 
 user_info = set_R_hat.user_info
 
-mission_info = set_R_hat_mission_info
+mission_info = set_R_hat.mission_info
 
 classified_R_hat = set_R_hat.classified_R_hat
 
@@ -32,9 +32,9 @@ target_user_id = 'u1'
 while True:
     action = input()
     if action == 1: 
-        functions.set_user_applicable_missions(target_user_id, classified_R_hat, user_info, mission_info, weekly_weather)
+        print("get_applicable_mission : ", functions.set_user_applicable_missions(target_user_id, classified_R_hat, user_info, mission_info, weekly_weather))
     elif action == 2:
-        functinos.set_weekly_mission(target_user_id, user_info, mission_info, functions.get_today_idx(), weekly_weather)
+        print("set_weekly_mission : ", functinos.set_weekly_mission(target_user_id, user_info, mission_info, functions.get_today_idx(), weekly_weather))
     elif action == 3:
         daily_mission = functions.get_daily_mission(target_user_id, user_info, today_weather)
         print("daily_mission", daily_mission)
