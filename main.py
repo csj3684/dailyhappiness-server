@@ -28,7 +28,7 @@ classified_R_hat = set_R_hat.classified_R_hat
 
 weathers = ['sunny', 'sunny', 'sunny', 'rainy', 'snowy', 'snowy', 'snowy']
 
-weekly_weather = functions.get_weekly_weather(weathers)
+weekly_weather = functions.get_weekly_weather(weathers, weather_category)
  
 target_user_id = 'u1'
 
