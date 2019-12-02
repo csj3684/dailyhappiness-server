@@ -72,7 +72,7 @@ R_rating = data.loc[:,'rating']#
 R_data_num = len(R_user_id)
 
 
-log = funcsions.get_init_log(weather_category, user_id, mission_id)
+log = functions.get_init_log(weather_category, user_id, mission_id)
 
 classified_R = functions.get_classified_R(user_id, mission_id, weather_category, temperature_min, temperature_max, R_user_id, R_mission_id, R_weather, R_temperature, R_rating, R_data_num)
 
