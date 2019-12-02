@@ -1065,7 +1065,7 @@ def get_minimum_cost_mission_set(target_user_id, user_info, mission_info, today_
     
     #return pd.DataFrame(minimum_cost_mission_set.iloc[minimum_cost_mission_set.index.size - 1]).T, minimum_cost_mission_set
     
-def get_weekly_weather(weathers):
+def get_weekly_weather(weathers, weather_category):
     weekly_weather = pd.DataFrame(index = weather_category, columns = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data = [[0, 0, 0, 0, 0, 0, 0],])
     for day_idx in range(weekly_weather.columns.size):
         weather = weathers[day_idx]
