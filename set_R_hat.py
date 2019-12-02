@@ -72,13 +72,13 @@ R_rating = data.loc[:,'rating']#
 R_data_num = len(R_user_id)
 
 
-log = get_init_log(weather_category, user_id, mission_id)
+log = funcsions.get_init_log(weather_category, user_id, mission_id)
 
-classified_R = get_classified_R(user_id, mission_id, weather_category, temperature_min, temperature_max, R_user_id, R_mission_id, R_weather, R_temperature, R_rating, R_data_num)
+classified_R = functions.get_classified_R(user_id, mission_id, weather_category, temperature_min, temperature_max, R_user_id, R_mission_id, R_weather, R_temperature, R_rating, R_data_num)
 
 start1 = time.time()
 
-classified_R_hat = get_classified_R_hat_by_KNN(classified_R, log)
+classified_R_hat = functions.get_classified_R_hat_by_KNN(classified_R, log)
 #classified_R_hat = get_classified_R_hat_by_Regression(classified_R)
 #classified_R_hat = get_classified_R_hat_by_matrix_completion(classified_R)
 
