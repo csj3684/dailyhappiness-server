@@ -18,7 +18,7 @@ import datetime
 
 weather_category = ['sunny', 'cloudy', 'rainy' , 'snowy']
 
-# 주간 첫 시작시 import set_R_hat
+import set_R_hat
 
 user_info = set_R_hat.user_info
 
