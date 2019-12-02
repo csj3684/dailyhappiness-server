@@ -35,6 +35,7 @@ target_user_id = 'u1'
 today_idx = functions.datetime.datetime.today().weekday()
  
 while True:
+    today_weather = weathers[today_idx]
     action = input()
     if action == '1': 
         print("get_applicable_mission : ", functions.set_user_applicable_missions(target_user_id, classified_R_hat, user_info, mission_info, weekly_weather))
