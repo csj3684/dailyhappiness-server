@@ -893,11 +893,13 @@ def update_user_applicable_missions(user_id, user_info, mission_info, mission_id
             if applicable_missions.loc[i]['mission_id'] == mission_id:
                 applicable_missions.drop(i, inplace = True)
                 
+        print("applicable_missions",user_info.loc[user_id]['applicable_missions'])        
         set_weekly_mission(user_id, user_info, mission_info, today_idx, weekly_weather)
         
 def set_weekly_mission(user_id, user_info, mission_info, today_idx, weekly_weather):
     
     applicable_missions = user_info.loc[user_id]['applicable_missions']
+    print("applicable_missions", applicable_missions)
     sort_by_g_per_c(applicable_missions)
     
     cost = user_info.loc[user_id]['cost']
