@@ -45,10 +45,10 @@ while True:
         daily_mission = functions.get_daily_mission(target_user_id, user_info, today_weather)
         print("daily_mission", daily_mission)
     elif action == 'done':
-        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "done", today_idx, weekly_weather)
+        functions.update_user_applicable_missions(target_user_id, user_info, mission_info, daily_mission, "done", today_idx, weekly_weather)
         today_idx += 1
     elif action == 'pass':
-        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "pass", today_idx, weekly_weather)
+        functions.update_user_applicable_missions(target_user_id, user_info, mission_info, daily_mission, "pass", today_idx, weekly_weather)
     elif action == "exit":
         break
     elif action == "switch":
