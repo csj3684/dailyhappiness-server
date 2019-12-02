@@ -37,16 +37,19 @@ while True:
     if action == '1': 
         print("get_applicable_mission : ", functions.set_user_applicable_missions(target_user_id, classified_R_hat, user_info, mission_info, weekly_weather))
     elif action == '2':
-        print("set_weekly_mission : ", functinos.set_weekly_mission(target_user_id, user_info, mission_info, functions.get_today_idx(), weekly_weather))
+        print("set_weekly_mission : ", functions.set_weekly_mission(target_user_id, user_info, mission_info, functions.get_today_idx(), weekly_weather))
     elif action == '3':
         daily_mission = functions.get_daily_mission(target_user_id, user_info, today_weather)
         print("daily_mission", daily_mission)
     elif action == '4':
-        functinos.update_user_applicable_missions(target_user_id, user_info, daily_mission, "done", functions.get_today_idx(), weekly_weather)
+        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "done", functions.get_today_idx(), weekly_weather)
     elif action == '5':
-        functinos.update_user_applicable_missions(target_user_id, user_info, daily_mission, "pass", functions.get_today_idx(), weekly_weather)
+        functions.update_user_applicable_missions(target_user_id, user_info, daily_mission, "pass", functions.get_today_idx(), weekly_weather)
     elif action == "exit":
         break
+    elif action == "switch":
+        target_user_id = input()
+        continue
     else:
         print("Key Error")
         continue
