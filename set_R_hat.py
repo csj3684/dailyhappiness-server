@@ -1,5 +1,9 @@
 import functions
 
+
+
+
+
 weather_category = ['sunny', 'cloudy', 'rainy', 'snowy']
 
 data = pd.read_csv('C:/Users/CAU/Desktop/2019_2/capstone_project/Test_data/user_info_sample.csv', engine='python')
