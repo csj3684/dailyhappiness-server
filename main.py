@@ -46,7 +46,7 @@ while True:
     elif action == '5':
         functinos.update_user_applicable_missions(target_user_id, user_info, daily_mission, "pass", functions.get_today_idx(), weekly_weather)
     elif action == "exit":
-        return
+        break
     else:
         print("Key Error")
         continue
