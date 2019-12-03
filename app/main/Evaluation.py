@@ -63,6 +63,19 @@ def getEvaluation():
     evaluationList = pd.DataFrame(data=[{"users_id": i['userIndex'], "missions_id":missionID['missionID'], "weather":-1,"temperature":-1, "rating":-1}  for i in users for missionID in missions],
                                   columns=['users_id','missions_id','weather','temperature','rating'],
                                   index=[[userIndex['userIndex'] for userIndex in users for i in missions], [missionID['missionID'] for i in users for missionID in missions]])
+    '''            user_id     missions_id     weather     temperature     rating
+    user1   1
+            2
+            3
+            4
+            5
+    user2   1
+            2
+            3
+            4
+            5
+    '''
+
 
     #sql 문을 불러옴
     sql = "SELECT user, mission, weather, temperature, rating FROM MissionEvaluation"

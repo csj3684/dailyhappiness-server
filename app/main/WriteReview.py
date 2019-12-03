@@ -22,7 +22,7 @@ def uploadImage():
         file = request.files['upload']
         file.save(app.root_path+"/static/img/" + secure_filename(file.filename))
         global filename
-        filename = "https://dailyhappiness.xyz"+"/static/img/" + secure_filename(file.filename)
+        filename = "https://dailyhappiness.xyz/static/img/" + secure_filename(file.filename)
         success = {'success': True}
     except Exception as e:
         success = {'success': False}
@@ -57,6 +57,38 @@ def uploadReview():
     getTodaysWeather(rs)
     weather = getWeather()
     temperature = getTemperature()
+    sql = "UPDATE User SET missionCount = missionCount+1 WHERE userIndex = %s"
+    try:
+        DB.curs.execute(sql,(userIndex))
+    except Exception as e:
+        print(e)
+        DB.conn.rollback()
+        success = {'success': False}
+        return success
+
+    sql = "UPDATE User " \
+          "SET grade= " \
+          "CASE " \
+          "WHEN missionCount BETWEEN 0 AND 30 THEN 1 " \
+          "WHEN missionCount BETWEEN 31 AND 60 THEN 2 " \
+          "WHEN missionCount BETWEEN 61 AND 90 THEN 3 " \
+          "WHEN missionCount BETWEEN 91 AND 120 THEN 4 " \
+          "WHEN missionCount BETWEEN 121 AND 150 THEN 5 " \
+          "WHEN missionCount BETWEEN 151 AND 180 THEN 6 " \
+          "WHEN missionCount BETWEEN 181 AND 210 THEN 7 " \
+          "WHEN missionCount BETWEEN 211 AND 240 THEN 8 " \
+          "WHEN missionCount BETWEEN 241 AND 270 THEN 9 " \
+          "WHEN missionCount BETWEEN 271 AND 300 THEN 10 " \
+          "ELSE 12 " \
+          "END " \
+          "WHERE userIndex = %s;"
+    try:
+        DB.curs.execute(sql, (userIndex))
+    except Exception as e:
+        print(e)
+        DB.conn.rollback()
+        success = {'success': False}
+        return success
 
     sql = "INSERT INTO MissionEvaluation(evaluationIndex, user, mission, rating, weather, date, comment, picture, temperature) VALUES(%s, %s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE rating=%s, weather=%s, date = %s,comment=%s,picture=%s,temperature=%s"
     print(type(userIndex+"."+missionIndex), type(userIndex), type(missionIndex), type(missionRating),type(weather),type(now_date),type(content),type(filename),type(temperature))
@@ -106,3 +138,38 @@ def grid(v1, v2) :
     rs['y'] = math.floor(ro - ra * math.cos(theta) + YO + 0.5)
 
     return rs
+
+@writeReviewPage.route('/survey', methods=['GET', 'POST'])
+def writeSurveyReview():
+    userIndex = request.form['userIndex']
+    missionID = request.form['missionID']
+    rating = request.form['rating']
+    isLast = request.form['isLast']
+    id = str(userIndex)+"."+str(missionID)
+    getTodaysWeather({'x': 59, 'y': 125})
+    todaysWeather = getWeather()
+    todaysTemperature = getTemperature()
+
+    DB.dbConnect()
+    DB.setCursorDic()
+
+    sql ="INSERT INTO MissionEvaluation (evaluationIndex, user, mission,rating, weather, temperature) " \
+         "VALUES (%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE " \
+         "rating=%s, weather=%s, temperature=%s"
+    try:
+        DB.curs.execute(sql, (id, userIndex,missionID,rating,todaysWeather,todaysTemperature,rating,todaysWeather,todaysTemperature))
+        DB.conn.commit()
+        row = {'end' : 0}
+    except Exception as e:
+        print(e)
+
+    if isLast:
+        sql ="UPDATE User SET didSurvey=1 WHERE userIndex = %s"
+        try:
+            DB.curs.execute(sql, (userIndex))
+            DB.conn.commit()
+            row = {'end': 1}
+        except Exception as e:
+            print(e)
+
+    return json.dumps(row).encode('utf-8')

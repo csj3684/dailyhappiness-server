@@ -1,0 +1,234 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>데일리 해피니스 관리자 페이지</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <style>
+            a:link { text-decoration: none;}
+            a:visited { text-decoration: none;}
+            a:hover { text-decoration: none;}
+            ol{
+              padding-left: 0px;
+            }
+            .container-fluid{
+              text-align:center;
+              margin-bottom: 30px;
+              padding-top:7px;
+              padding-bottom: 10px;
+              background-color: #ffdee7;
+              border-radius: 10px;
+
+            }
+            body{
+              font-family: 'Nanum Myeongjo', serif;
+              color:#130a5d;
+              font-size: 0.8rem;
+            }
+            .title{
+              color:#8f1c7b;
+              font-weight: bold;
+              font-size: 3rem;
+            }
+            .missionContainer{
+              border: solid;
+              padding: 50px 10px 50px 10px;
+              border-radius: 10px;
+              width: 90%;
+              margin: auto;
+              border-color: #8f1c7b;
+
+            }
+
+            .row{
+                margin-bottom: 15px;
+                min-height: 2rem;
+            }
+            .checkbox{
+                height: 1.5rem;
+                width: 1.5rem;
+            }
+            .submit{
+                margin: auto;
+            }
+            .form-control, .dropdown{
+                display: inline-block;
+                width: 75%;
+                height: 80%;
+            }
+            .missionName{
+                word-break:break-all;
+                width : 100%;
+            }
+            .col-1{
+                padding-left:0;
+                padding-right:0;
+            }
+            .form-control{
+                padding: .375rem .06rem;
+
+            }
+            .dropdown{
+                text-align: left;
+                list-style: none;
+                background-color: #fff;
+                background-clip: padding-box;
+                border: 1px solid rgba(0,0,0,.15);
+                border-radius: .25rem;
+            }
+            .dropdown-item{
+
+            }
+
+            @media (min-width: 1000px) {
+              body{
+                font-size: 1rem;
+              }
+              .title{
+
+                font-size: 2.3rem;
+              }
+
+            }
+        </style>
+    </head>
+
+    <body>
+    <div class="container-fluid">
+        데일리해피니스 관리자 페이지
+    </div>
+    <div class="container-fluid">
+        <a href="/manage/show?mode=likes"class="btn btn-danger">좋아요 순</a>
+        <a href="/manage/show?mode=dislikes"class="btn btn-danger">싫어요 순</a>
+        <a href="/manage/show?mode=oldest"class="btn btn-danger">오래된 순</a>
+        <a href="/manage/show?mode=duplicate"class="btn btn-danger">중복 많은 순</a>
+    </div>
+    <div class="container-fluid ">
+        <div class="missionContainer">
+            {% if mode == 'likes' %}
+                <div class="title">인기 미션 후보 목록</div>
+            {% elif mode =='dislikes' %}
+                <div class="title">인기 없는 미션 후보 목록</div>
+            {% elif mode =='oldest' %}
+                <div class="title">오래된 미션 후보 목록</div>
+            {% elif mode =='duplicate' %}
+                <div class="title">중복 많은 미션 후보 목록</div>
+            {% endif%}
+            <p>
+                체크한 미션 후보를 삭제하거나, 공식 미션으로 추가가 가능합니다.<br>
+                공식 미션을 추가할 때에 <mark>내용을 확인하고</mark>, <mark>cost</mark>, <mark>시간</mark>, <mark>점수</mark>를 설정합니다.<br>
+                만약 내용에 수정할 요소가 있으면 수정할 수 있습니다.<br><br>
+                <mark>반영할 후보 미션을 체크를 해야 반영이 되니 주의하세요.</mark>
+            </p>
+            <ol>
+                {% if missionCandidateList %}
+                <form method="post">
+                    <li class="row">
+                        <div class="col-1">번호</div>
+                        <div class="col-1">작성자</div>
+                        <div class="col-3">내용</div>
+                        <div class="col-1">좋아요</div>
+                        <div class="col-1">싫어요</div>
+                        <div class="col-1">중복</div>
+                        <div class="col-1">cost</div>
+                        <div class="col-1">시간</div>
+                        <div class="col-1">점수</div>
+                        <div class="col-1">체크</div>
+                    </li>
+                    {% for missionCandidate in missionCandidateList %}
+                        <li class="row">
+                            <div class="col-1">
+                                <input type="text" name="writer-{{missionCandidate['missionCandidateIndex']}}" value="{{missionCandidate['userIndex']}}" class="form-control" onKeyup="this.value=this.value.replace(/[^0-9]/g,'');">
+
+                            </div>
+                            <div class="col-1">{{missionCandidate['missionCandidateIndex']}}</div>
+                            <div class="col-3">
+                                <input type="textarea" name="name-{{missionCandidate['missionCandidateIndex']}}" value="{{missionCandidate['missionName']}}" class="form-control missionName">
+                            </div>
+                            <div class="col-1">{{missionCandidate['likes']}}</div>
+                            <div class="col-1">{{missionCandidate['dislikes']}}</div>
+                            <div class="col-1">{{missionCandidate['duplicateCount']}}</div>
+                            <div class="col-1">
+                                <input type="text" name="cost-{{missionCandidate['missionCandidateIndex']}}" value="0" class="form-control" onKeyup="this.value=this.value.replace(/[^0-9]/g,'');">
+                                원
+                            </div>
+                            <div class="col-1">
+                                <select class="dropdown" name="time-{{missionCandidate['missionCandidateIndex']}}">
+                                    <option class="" value="5">5</option>
+                                    <option class="" value="10">10</option>
+                                    <option class="" value="15">15</option>
+                                    <option class="" value="20">20</option>
+                                    <option class="" value="25">25</option>
+                                </select>
+                            </div>
+                            <div class="col-1">
+                                <select class="dropdown" name="rating-{{missionCandidate['missionCandidateIndex']}}">
+                                    <option class="" value="1">1</option>
+                                    <option class="" value="2">2</option>
+                                    <option class="" value="3">3</option>
+                                    <option class="" value="4">4</option>
+                                    <option class="" value="5">5</option>
+                                    <option class="" value="6">6</option>
+                                    <option class="" value="7">7</option>
+                                    <option class="" value="8">8</option>
+                                    <option class="" value="9">9</option>
+                                </select>
+                            </div>
+
+                            <div class="col-1">
+                                <input type="checkbox" class="checkbox" name="missionCandidate" value="{{missionCandidate['missionCandidateIndex']}}">
+                            </div>
+                        </li>
+                    {% endfor %}
+                    <li class="row">
+                        <div class="col-6 submit">
+                            <input type="submit" class="btn btn-danger" value="공식미션 추가" formaction="/manage/toOfficial">
+                            <input type="submit" class="btn btn-danger" value="후보미션 삭제" formaction="/manage/delete">
+                        </div>
+
+                    </li>
+                </form>
+                {% else %}
+                    <h2>해당되는 미션 후보가 없습니다.</h2>
+                {% endif %}
+            </ol>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="missionContainer">
+            <div class="title">공식 미션 목록</div>
+            {% if missionList %}
+             <ol>
+                 <form method="post">
+                     <li class="row">
+                         <div class="col-2">번호</div>
+                         <div class="col-6">내용</div>
+                         <div class="col-2">cost</div>
+                         <div class="col-2">시간</div>
+
+                     </li>
+                     {% for mission in missionList %}
+                     <li class="row">
+                         <div class="col-2">{{mission['missionID']}}</div>
+                         <div class="col-6">{{mission['missionName']}}</div>
+                         <div class="col-2">{{mission['expense']}}</div>
+                         <div class="col-2">{{mission['missionTime']}}</div>
+
+                     </li>
+                     {% endfor %}
+                 </form>
+             </ol>
+             {% else %}
+                <h2>공식 미션이 없습니다.</h2>
+             {% endif %}
+        </div>
+
+    </div>
+
+
+
+    </body>
+</html>
