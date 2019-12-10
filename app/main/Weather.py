@@ -114,14 +114,36 @@ def get_max_min_weekly_weather():
 
     return {'max': max(temperature_max), 'min':min(temperature_min)}
 
-def get_weekly_weather():
+def get_weekly_weather_list():
+    today = datetime.today().date()#.strftime('%Y%m%d')
+    today_day_index = today.weekday()
+    weather_list = ['cloudy' for i in range(7)]
     openweather_key = "651e99c02e73a125832267efd3e2b11e"
-    lat=37.50415383134555
-    lon=126.95734023260117
     owm = OWM(openweather_key)
-    obs = owm.weather_at_coordinate(lat, lon)
+    fc = owm.three_hours_forecast('Korea')
 
 
+    f = fc.get_forecast()
+    lst = f.get_weathers()
+    for weather in lst:
 
-    weather = obs.get_weather()
-    print(weather)
+        date_str = weather.get_reference_time('date').strftime('%Y%m%d')
+        date_ = datetime.strptime(date_str,'%Y%m%d').date()
+
+        date_diff = date_ - today
+        if today_day_index + date_diff.days>6:
+            break
+        weather_list[today_day_index+date_diff.days] = str_match(weather.get_status())
+
+    if weather_list[6]==0:
+        weather_list[6] = weather_list[5]
+
+    return weather_list
+
+def str_match(str):
+    if str == 'Rain' or str == 'Thunderstorm' or str=='Drizzle' or str=='Rain' or str =='Snow':
+        return 'cloudy'
+    else:
+        return 'sunny'
+
+

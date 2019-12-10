@@ -5,7 +5,7 @@ from flask import Blueprint, request, render_template, flash, redirect, url_for
 from flask import current_app as app
 from app.main.DB import DB
 import json
-from app.main.Weather import getTemperature,getWeather, getTodaysWeather,get_weekly_weather
+from app.main.Weather import getTemperature,getWeather, getTodaysWeather,get_weekly_weather_list
 
 import pandas as pd
 import app.main.MissionBundle as R_hat_module
@@ -33,9 +33,9 @@ def image():
 
 @main.route('/aa', methods=['GET'])
 def aa():
-    get_weekly_weather()
+    list = get_weekly_weather_list()
 
-    return 'set_R_hat'
+    return json.dumps(list).encode('utf-8')
 
 @main.route('/get', methods=['GET'])
 def bb():

@@ -104,6 +104,7 @@
         <a href="/manage/show?mode=dislikes"class="btn btn-danger">싫어요 순</a>
         <a href="/manage/show?mode=oldest"class="btn btn-danger">오래된 순</a>
         <a href="/manage/show?mode=duplicate"class="btn btn-danger">중복 많은 순</a>
+        <a href="/missionKing/update"class="btn btn-danger">왕중왕 업데이트</a>
     </div>
     <div class="container-fluid ">
         <div class="missionContainer">
@@ -139,11 +140,12 @@
                     </li>
                     {% for missionCandidate in missionCandidateList %}
                         <li class="row">
+                            <div class="col-1">{{missionCandidate['missionCandidateIndex']}}</div>
                             <div class="col-1">
                                 <input type="text" name="writer-{{missionCandidate['missionCandidateIndex']}}" value="{{missionCandidate['userIndex']}}" class="form-control" onKeyup="this.value=this.value.replace(/[^0-9]/g,'');">
 
                             </div>
-                            <div class="col-1">{{missionCandidate['missionCandidateIndex']}}</div>
+
                             <div class="col-3">
                                 <input type="textarea" name="name-{{missionCandidate['missionCandidateIndex']}}" value="{{missionCandidate['missionName']}}" class="form-control missionName">
                             </div>

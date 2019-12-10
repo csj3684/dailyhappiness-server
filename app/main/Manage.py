@@ -7,8 +7,8 @@ import math
 import json
 from datetime import datetime
 import hashlib
-
-import pymysql
+from app.main.MissionBundle import calculate_R_hat, add_default_mission
+import mysql.connector
 import json
 
 
@@ -26,9 +26,9 @@ def manageMissionCandidate():
     if 'userID' in session:
         userID = session['userID']
         userIndex = session['userIndex']
-
-        DB.dbConnect()
-        DB.setCursorDic()
+        db = DB()
+        db.dbConnect()
+        db.setCursorDic()
 
         '''로그인이 되어 있으면 '''
         '''관리자일 경우에 '''
@@ -42,27 +42,27 @@ def manageMissionCandidate():
         elif mode == 'duplicate':
             sql = "SELECT * FROM MissionCandidate ORDER BY duplicateCount DESC"
         try:
-            DB.curs.execute(sql)
-            missionCandidateList = DB.curs.fetchall()
+            db.curs.execute(sql)
+            missionCandidateList = db.curs.fetchall()
             #print(missionCandidateList)
-        except pymysql.Error as e:
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.dbDisconnect()
+            db.dbDisconnect()
             return "Error %d: %s" % (e.args[0], e.args[1])
 
         sql = "SELECT missionID, missionName, missionTime,expense FROM Mission ORDER BY missionID DESC"
         try:
-            DB.curs.execute(sql)
-            missionList = DB.curs.fetchall()
-        except pymysql.Error as e:
+            db.curs.execute(sql)
+            missionList = db.curs.fetchall()
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.dbDisconnect()
+            db.dbDisconnect()
             return "Error %d: %s" % (e.args[0], e.args[1])
-        DB.dbDisconnect()
+        db.dbDisconnect()
 
         return render_template('/manage/manage.html', missionCandidateList = missionCandidateList,missionList=missionList, userID = userID, userIndex = userIndex,mode = mode)
     else:
-        print("로그인 template")
+        
         return render_template('/manage/login.html')
 
 @Manage.route('/login', methods=['GET', 'POST'])
@@ -72,50 +72,52 @@ def managerLogin():
     password = request.form['password']
     encoded_password = hashlib.sha256(password.encode()).hexdigest()
     print("\n\n"+encoded_password+"\n\n")
-    DB.dbConnect()
-    DB.setCursorDic()
+    db = DB()
+    db.dbConnect()
+    db.setCursorDic()
     sql = "SELECT * FROM User WHERE id = %s and password=%s"
     try:
-        DB.curs.execute(sql, (id, encoded_password))
-        row = DB.curs.fetchone()
-    except pymysql.Error as e:
+        db.curs.execute(sql, (id, encoded_password))
+        row = db.curs.fetchone()
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
-    print(row)
+    print("관리자 로그인",row)
 
 
     #로그인 됨
     if row:
         #로그인은 되는데 관리자가 아니면
         if row['manager']==0:
-            DB.dbDisconnect()
+            db.dbDisconnect()
             return render_template('/manage/login.html', message="관리자 아이디로 로그인해주세요")
         #로그인도 되고 관리자이면
         else:
             session['userID'] = row['id']
             session['userIndex'] = row['userIndex']
-            DB.dbDisconnect()
-            print("redirect manage")
+            db.dbDisconnect()
+            
             return manageMissionCandidate()
     #로그인 안 됨
     else:
         try:
             sql = "SELECT EXISTS(SELECT id FROM User WHERE id = %s) AS success"
-            DB.curs.execute(sql,(id))
-            row = DB.curs.fetchone()
+            db.curs.execute(sql,(id,))
+            row = db.curs.fetchone()
 
             if row['success']==1:
                 message = "비밀번호가 잘못되었습니다."
             else:
                 message = "아이디가 잘못되었습니다."
-        except pymysql.Error as e:
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
         return render_template('/manage/login.html', message=message)
 
 @Manage.route('/toOfficial', methods=['GET', 'POST'])
 def toOfficial():
     missionCandidateList = request.form.getlist("missionCandidate")
-    DB.dbConnect()
-    DB.setCursorDic()
+    db=DB()
+    db.dbConnect()
+    db.setCursorDic()
     for missionCandidateIndex in missionCandidateList:
         cost = request.form['cost-'+missionCandidateIndex]
         name = request.form['name-'+missionCandidateIndex]
@@ -126,21 +128,21 @@ def toOfficial():
         '''Mission table에 후보 미션을 넣는것'''
         sql = "INSERT INTO Mission(missionName, missionTime, expense) VALUES (%s,%s,%s)"
         try:
-            DB.curs.execute(sql, (name, time,cost))
+            db.curs.execute(sql, (name, time,cost))
             #DB.conn.commit()
-        except pymysql.Error as e:
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.dbDisconnect()
+            db.dbDisconnect()
             return "<h1>INSERT mission error</h1>"
 
         '''넣은 mission의 미션 번호를 가져오는 것'''
         sql = "SELECT missionID FROM Mission WHERE missionName = %s"
         try:
-            DB.curs.execute(sql, (name))
-            missionID = str(DB.curs.fetchone()['missionID'])
-        except pymysql.Error as e:
+            db.curs.execute(sql, (name,))
+            missionID = str(db.curs.fetchone()['missionID'])
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.dbDisconnect()
+            db.dbDisconnect()
             return "<h1>get mission id error</h1>"
 
         '''넣은 미션의 관리자 평가를 넣음'''
@@ -151,54 +153,75 @@ def toOfficial():
         todaysTemperature = getTemperature()
         sql = "INSERT INTO MissionEvaluation (evaluationIndex, user, mission, rating, weather, comment, picture, temperature) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)"
         try:
-            print(type(user), type(missionID), type(rating), type(todaysWeather), type(todaysTemperature))
-            DB.curs.execute(sql, (user+"."+missionID, user, missionID, rating,todaysWeather, name, "https://dailyhappiness.xyz/static/img/no-image.jpg", todaysTemperature))
+           
+            db.curs.execute(sql, (user+"."+missionID, user, missionID, rating,todaysWeather, name, "https://dailyhappiness.xyz/static/img/no-image.jpg", todaysTemperature))
 
-        except pymysql.Error as e:
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.dbDisconnect()
+            db.dbDisconnect()
             return "<h1>insert manager's rating error</h1>"
 
         '''User에서 작성자의 missionCandidateCount를 증가시켜준다.'''
         sql = "UPDATE User set missionCandidateCount = missionCandidateCount+1 WHERE userIndex = %s"
         try:
-            DB.curs.execute(sql, (writer))
-        except pymysql.Error as e:
+            db.curs.execute(sql, (writer,))
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.dbDisconnect()
+            db.dbDisconnect()
             return "<h1>update mission candidate count error</h1>"
+        
+        sql = "UPDATE User set isWeekFirst =1"
+        try:
+            db.curs.execute(sql)
+        except mysql.connector.Error as e:
+            print("Error %d: %s" % (e.args[0], e.args[1]))
+            db.dbDisconnect()
+            return "<h1>update isFirst error</h1>"
 
         '''Mission 테이블에 넣은 미션은 MissionCandidate 테이블에서 지운다.'''
         sql = "DELETE FROM MissionCandidate WHERE missionCandidateIndex = %s"
         try:
-            DB.curs.execute(sql, (missionCandidateIndex))
-            DB.conn.commit()
-        except pymysql.Error as e:
+            db.curs.execute(sql, (missionCandidateIndex,))
+            db.conn.commit()
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.conn.rollback()
-            DB.dbDisconnect()
+            db.conn.rollback()
+            db.dbDisconnect()
             return "<h1>delete mission candidate error</h1>"
-    DB.dbDisconnect()
+    
+
+    if rating == 0:
+        add_default_mission(missionID, rating, cost, 0, todaysWeather)
+    elif cost == 0:
+        add_default_mission(missionID, rating, cost, float('inf'), todaysWeather)
+    else:
+        add_default_mission(missionID, rating, cost, float(rating) / cost, todaysWeather)
+        
+   
+    print("calculate_R_hat() start")
+    calculate_R_hat(0)
+    db.dbDisconnect()
     return render_template('/manage/complete.html')
 
 @Manage.route('/delete', methods=['GET', 'POST'])
 def delete():
     missionCandidateList = request.form.getlist("missionCandidate")
-    DB.dbConnect()
-    DB.setCursorDic()
+    db=DB()
+    db.dbConnect()
+    db.setCursorDic()
     for missionCandidateIndex in missionCandidateList:
 
         sql = "DELETE FROM MissionCandidate WHERE missionCandidateIndex = %s"
         try:
-            DB.curs.execute(sql, (missionCandidateIndex))
-            DB.conn.commit()
+            db.curs.execute(sql, (missionCandidateIndex,))
+            db.conn.commit()
 
-        except pymysql.Error as e:
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.conn.rollback()
-            DB.dbDisconnect()
+            db.conn.rollback()
+            db.dbDisconnect()
             return "<h1>delete mission candidate error</h1>"
-    DB.dbDisconnect()
+    db.dbDisconnect()
     return render_template('/manage/complete.html')
 
 def json_default(value):

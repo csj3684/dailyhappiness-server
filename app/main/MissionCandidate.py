@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 import hashlib
 
-import pymysql
+import mysql.connector
 import json
 
 '''
@@ -27,59 +27,22 @@ def insertMissionCandidate():
     user = request.form['userIndex']
     mission = request.form['missionName']
     today = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    DB.dbConnect()
-    DB.setCursorDic()
+    db = DB()
+    db.dbConnect()
+    db.setCursorDic()
     print(mission)
     sql = "INSERT INTO MissionCandidate (userIndex,date,missionName,likes,dislikes,likesRatio,duplicateCount) VALUES (%s,%s,%s,0,0,0.0,0)"
 
     try:
-        DB.curs.execute(sql,(user,today,mission))
-        DB.conn.commit()
+        db.curs.execute(sql,(user,today,mission))
+        db.conn.commit()
         success = {'success':True}
-    except pymysql.Error as e:
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
         success = {'success':False}
 
-    #DB.dbDisconnect()
+    #db.dbDisconnect()
     return json.dumps(success).encode('utf-8')
-
-@MissionCandidate.route('/getOne', methods=['GET', 'POST'])
-def getOneMissionCandidate():
-    print("\n\ngetOneMissionCandidate 호출\n\n")
-    '''
-    원하는 미션을 하나만 받아올 때 쓰이는 함수.
-    '''
-    userIndex = request.form['userIndex']
-    missionCandidateIndex = request.form['missionCandidateIndex']
-
-    DB.dbConnect()
-    DB.setCursorDic()
-
-    sql = f"SELECT " \
-          f"MissionCandidate.missionName, " \
-          f"MissionCandidate.missionCandidateIndex AS missionCandidateIndex, " \
-          f"MissionCandidate.likes AS totalLikes, " \
-          f"MissionCandidate.dislikes AS totalDislikes, " \
-          f"MissionCandidate.duplicateCount AS totalDuplicateCount, " \
-          f"IFNULL(MissionCandidateEvaluation.likes,0) As userLikes, " \
-          f"IFNULL(MissionCandidateEvaluation.dislikes,0) As userDislikes, " \
-          f"IFNULL(MissionCandidateEvaluation.duplicateCount,0) As userDuplicateCount, " \
-          f"User.id AS user " \
-          f"FROM MissionCandidate " \
-          f"LEFT JOIN MissionCandidateEvaluation ON (MissionCandidate.missionCandidateIndex =MissionCandidateEvaluation.missionCandidateIndex and MissionCandidateEvaluation.userIndex = {userIndex}) " \
-          f"WHERE MissionCandidate.missionCandidateIndex = {missionCandidateIndex} " \
-          f"JOIN User ON MissionCandidate.userIndex = User.userIndex"
-    try:
-        DB.curs.execute(sql)
-        rows = DB.curs.fetchall()
-    except pymysql.Error as e:
-        print("Error %d: %s %s" % (e.args[0], e.args[1]))
-        success = {'success':False}
-
-    print(rows)
-    DB.dbDisconnect()
-    return json.dumps(rows, default=json_default).encode('utf-8')
 
 
 @MissionCandidate.route('/get', methods=['GET', 'POST'])
@@ -93,9 +56,9 @@ def getMissionCandidate():
     '''
     userIndex = request.form['userIndex']
     missionCandidateCount = int(request.form['missionCandidateCount'])
-
-    DB.dbConnect()
-    DB.setCursorDic()
+    db = DB()
+    db.dbConnect()
+    db.setCursorDic()
 
 
 
@@ -144,14 +107,14 @@ def getMissionCandidate():
 
 
     try:
-        DB.curs.execute(sql)
-        rows = DB.curs.fetchall()
-    except pymysql.Error as e:
+        db.curs.execute(sql)
+        rows = db.curs.fetchall()
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
         success = {'success':False}
 
     print(rows)
-    DB.dbDisconnect()
+    db.dbDisconnect()
     return json.dumps(rows, default=json_default).encode('utf-8')
 
 @MissionCandidate.route('/increment', methods=['GET', 'POST'])
@@ -183,21 +146,21 @@ def evaluation():
     else:
         print("which 매개변수 값 오류")
         return json.dumps({'success':False}, default=json_default).encode('utf-8')
-
-    DB.dbConnect()
-    DB.setCursorDic()
+    db = DB()
+    db.dbConnect()
+    db.setCursorDic()
     #MissionCandidate 테이블의 likes, dislikes, count 값을 바꾼다.
     sql = f"UPDATE MissionCandidate SET likes = likes+{likes}, dislikes = dislikes+{dislikes}, duplicateCount = duplicateCount + {count} WHERE missionCandidateIndex = {missioncandidateIndex}"
 
     try:
-        DB.curs.execute(sql)
+        db.curs.execute(sql)
         success = {'success':True}
         print("\nMissionCandidate 테이블 좋아요, 싫어요 중복 바꾸기 완료\n")
 
-    except pymysql.Error as e:
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
         success = {'success':False}
-        DB.dbDisconnect()
+        db.dbDisconnect()
         return json.dumps(success, default=json_default).encode('utf-8')
 
     # MissionCandidateEvaluation 테이블에 likes, dislikes, duplicateCount 값을 넣는다.
@@ -208,37 +171,39 @@ def evaluation():
           f"VALUES ({id}, {missioncandidateIndex}, {userIndex}, {likes}, {dislikes}, {count}) ON DUPLICATE KEY " \
           f"UPDATE likes = likes+{likes}, dislikes = dislikes + {dislikes}, duplicateCount = duplicateCount+{count}"
     try:
-        DB.curs.execute(sql)
-        DB.conn.commit()
+        db.curs.execute(sql)
+        db.conn.commit()
         success = {'success':True}
         print("\nMissionCandidateEvaluation 바꾸기 완료\n")
-    except pymysql.Error as e:
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
         success = {'success':False}
 
-    DB.dbDisconnect()
+    db.dbDisconnect()
 
     return json.dumps(success, default=json_default).encode('utf-8')
 
 @MissionCandidate.route('/search', methods=['GET', 'POST'])
 def search():
     keyword = request.form['keyword']
-    DB.dbConnect()
-    DB.setCursorDic()
+    db= DB()
+    db.dbConnect()
+    db.setCursorDic()
     '''미션 후보에서 검색하기'''
     sql = "SELECT missionName FROM MissionCandidate WHERE missionName LIKE '{}'".format('%{0}%'.format(keyword))
     try:
-        DB.curs.execute(sql)
-        rows1 = DB.curs.fetchall()
-    except pymysql.Error as e:
+        db.curs.execute(sql)
+        rows1 = db.curs.fetchall()
+    except mysql.connector.Error as e:
+
         print("Error %d: %s" % (e.args[0], e.args[1]))
 
     '''공식 미션에서 검색하기'''
     sql = "SELECT missionName FROM Mission WHERE missionName LIKE '{}'".format('%{0}%'.format(keyword))
     try:
-        DB.curs.execute(sql)
-        rows2 = DB.curs.fetchall()
-    except pymysql.Error as e:
+        db.curs.execute(sql)
+        rows2 = db.curs.fetchall()
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
     rows=[]
     if rows1:

@@ -1,23 +1,24 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for,jsonify
 from flask import current_app as app
 from app.main.DB import DB
-import pymysql
+import mysql.connector
 import json
 import datetime
 
 getReviewPage = Blueprint('getReviewPage', __name__, url_prefix='/getReviews')
 @getReviewPage.route('/', methods=['GET', 'POST'])
 def getReviews():
-    DB.dbConnect()
-    DB.setCursorDic()
+    db = DB()
+    db.dbConnect()
+    db.setCursorDic()
 
 
     print("getReviews 호출")
     userIndex = request.form['userIndex']
     getMine = request.form['getMine']
-    print(type(request.form['reviewCount']))
+    
     reviewCount = int(request.form['reviewCount'])
-    print("getMine = ",type(getMine))
+    
 
 
     if getMine=="true":
@@ -27,12 +28,12 @@ def getReviews():
 
     try:
 
-        DB.curs.execute(sql)
-        rows = DB.curs.fetchall()
-    except pymysql.Error as e:
+        db.curs.execute(sql)
+        rows = db.curs.fetchall()
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
 
-    DB.dbDisconnect()
+    db.dbDisconnect()
 
     rows = list({row['evaluationIndex'] : row for row in rows}.values())
     print(rows)

@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 import hashlib
 
-import pymysql
+import mysql.connector
 import json
 
 MissionKing = Blueprint('MissionKing', __name__, url_prefix='/missionKing')
@@ -16,19 +16,19 @@ MissionKing = Blueprint('MissionKing', __name__, url_prefix='/missionKing')
 @MissionKing.route('/update', methods=['GET', 'POST'])
 def updateMissionKing():
     print("\nupdateMissionKing\n")
-
-    DB.dbConnect()
-    DB.setCursorDic()
+    db = DB()
+    db.dbConnect()
+    db.setCursorDic()
 
 
     sql = "SELECT userIndex, missionCount, grade FROM User ORDER BY missionCount DESC LIMIT 0, 10 "
     try:
-        DB.curs.execute(sql)
-        rows = DB.curs.fetchall()
+        db.curs.execute(sql)
+        rows = db.curs.fetchall()
         print("\n\n")
         print(rows)
         print("\n\n")
-    except pymysql.Error as e:
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
         success = {'success': 'False'}
     #미션왕 넣기
@@ -44,22 +44,22 @@ def updateMissionKing():
               f"VALUES (%s,%s,%s,%s,%s,%s) " \
               f"ON DUPLICATE KEY UPDATE userIndex = %s, number = %s, emblem=%s"
         try:
-            DB.curs.execute(sql,(id, userIndex,which,ranking,count,emblem,userIndex,count,emblem))
-            DB.conn.commit()
+            db.curs.execute(sql,(id, userIndex,which,ranking,count,emblem,userIndex,count,emblem))
+            db.conn.commit()
             success = {'success': 'True'}
-        except pymysql.Error as e:
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.conn.rollback()
+            db.conn.rollback()
             success = {'success': 'False'}
 
     sql = "SELECT userIndex, missionCandidateCount, grade FROM User ORDER BY missionCandidateCount DESC LIMIT 0, 10 "
     try:
-        DB.curs.execute(sql)
-        rows2 = DB.curs.fetchall()
+        db.curs.execute(sql)
+        rows2 = db.curs.fetchall()
         print("\n\n")
         print(rows2)
         print("\n\n")
-    except pymysql.Error as e:
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
         success = {'success': 'False'}
     for i in range(len(rows2)):
@@ -74,29 +74,30 @@ def updateMissionKing():
               f"VALUES (%s,%s,%s,%s,%s,%s) " \
               f"ON DUPLICATE KEY UPDATE userIndex = %s, number = %s, emblem=%s"
         try:
-            DB.curs.execute(sql,(id, userIndex,which,ranking,count,emblem,userIndex,count,emblem))
-            DB.conn.commit()
+            db.curs.execute(sql,(id, userIndex,which,ranking,count,emblem,userIndex,count,emblem))
+            db.conn.commit()
             success = {'success': 'True'}
-        except pymysql.Error as e:
+        except mysql.connector.Error as e:
             print("Error %d: %s" % (e.args[0], e.args[1]))
-            DB.conn.rollback()
+            db.conn.rollback()
             success = {'success': 'False'}
-    DB.dbDisconnect()
+    db.dbDisconnect()
     return "<h1>success : " + success['success']+ "</h1>"
 
 
 
 @MissionKing.route('/get', methods=['GET', 'POST'])
 def getMissionKing():
-    DB.dbConnect()
-    DB.setCursorDic()
+    db = DB()
+    db.dbConnect()
+    db.setCursorDic()
 
     sql = "SELECT MissionKing.idMissionKing, MissionKing.userIndex, MissionKing.which, MissionKing.ranking,MissionKing.number, MissionKing.emblem, User.id FROM MissionKing JOIN User ON (MissionKing.userIndex = User.userIndex and User.id IS NOT NULL)"
 
     try:
-        DB.curs.execute(sql)
-        rows = DB.curs.fetchall()
-    except pymysql.Error as e:
+        db.curs.execute(sql)
+        rows = db.curs.fetchall()
+    except mysql.connector.Error as e:
         print("Error %d: %s" % (e.args[0], e.args[1]))
 
     return json.dumps(rows, default=json_default).encode('utf-8')
