@@ -22,13 +22,26 @@ def login():
             DB.curs.execute(sql, (_id, _password))
 
             rows = DB.curs.fetchone()
-            print(rows)
+
         except Exception as e:
             print(e)
-        finally:
-            DB.dbDisconnect()
 
+        '''미션을 한 번도 안 했는지 확인인(설문조사 포)'''
+        sql = "select user from MissionEvaluation where user = %s"
+        try:
+            DB.curs.execute(sql, (_id))
 
+            row = DB.curs.fetchone()
+            
+        except Exception as e:
+            print(e)
+
+        if row:
+            rows['isFirst'] = 0
+        else:
+            rows['isFirst'] = 1
+        DB.dbDisconnect()
+        print(rows)
         return json.dumps(rows).encode('utf-8')
       elif request.method =='GET':
         return 'GET'

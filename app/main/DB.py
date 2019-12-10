@@ -6,7 +6,7 @@ class DB:
     
     @staticmethod
     def dbConnect():
-        DB.conn = pymysql.connect(host='dailyhappiness.cglqv9cus9nr.ap-northeast-2.rds.amazonaws.com', user='admin', password='dailyhappiness-', db='dailyhappiness', charset='utf8')
+        DB.conn = pymysql.connect(host='dailyhappiness.cglqv9cus9nr.ap-northeast-2.rds.amazonaws.com', user='admin', password='', db='dailyhappiness', charset='utf8')
         
     @staticmethod    
     def setCursorDic():

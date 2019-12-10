@@ -2,7 +2,11 @@
 
 from urllib.request import urlopen
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import urllib.request,re
+import xml.etree.ElementTree as ET
+
+from pyowm import OWM
 
 
 
@@ -43,24 +47,30 @@ def getTodaysWeather(rs):
     parseWeatherData(jsonData)
 
 
-
-
 def parseWeatherData(jsonData):
     global weather
     global temperature
     try:
         weather_info = jsonData['response']['body']['items']['item']
+        #'sunny', 'cloudy', 'rainy', 'snowy'
         for i in weather_info:
             if i['category'] == 'SKY':
                 if i['fcstValue'] == 1:
-                    weather= 1 # 맑음
-                elif i['fcstValue'] == 4:
-                    weather= 4 # 흐림
+                    print("sunny")
+                    weather= 'sunny' # 맑음
+                elif i['fcstValue'] == 4 or 3:
+                    print("cloudy")
+                    weather= 'cloudy' # 흐림
+                elif i['fcstValue'] == 2:
+                    print("rainy")
+                    weather = 'rainy'  # 흐림
             elif i['category'] == 'PTY':
                 if i['fcstValue'] == 1 or 2:
-                    weather= 2 # 비
+                    print("rainy")
+                    weather= 'rainy' # 비
                 elif i['fcstValue'] ==3:
-                    weather= 3 # 눈
+                    print("sonwy")
+                    weather= 'snowy' # 눈
             elif i['category'] == 'T3H':
                 temperature = i['fcstValue']
     except KeyError:
@@ -86,5 +96,32 @@ def get_base_time(hour):
         temp_hour = '17'
     return temp_hour + '00'
 
+def get_max_min_weekly_weather():
+    url = "http://www.weather.go.kr/weather/forecast/mid-term-rss3.jsp?stnId=108"
+
+    temperature_max = []
+    temperature_min = []
+
+    ufile = urllib.request.urlopen(url)
+    contents = ufile.read().decode('utf-8')
+
+    root = ET.fromstring(contents)
+
+    for location in root.find('channel').find('item').find('description').find('body').findall('location'):
+        for data in location.findall('data'):
+            temperature_max.append(data.find('tmx').text)
+            temperature_min.append(data.find('tmn').text)
+
+    return {'max': max(temperature_max), 'min':min(temperature_min)}
+
+def get_weekly_weather():
+    openweather_key = "651e99c02e73a125832267efd3e2b11e"
+    lat=37.50415383134555
+    lon=126.95734023260117
+    owm = OWM(openweather_key)
+    obs = owm.weather_at_coordinate(lat, lon)
 
 
+
+    weather = obs.get_weather()
+    print(weather)

@@ -21,9 +21,9 @@ def getReviews():
 
 
     if getMine=="true":
-        sql = "SELECT evaluationIndex, user,id, mission,missionName, rating, weather, date, comment, picture, temperature FROM MissionEvaluation join Mission on MissionEvaluation.mission = Mission.missionID join User on (MissionEvaluation.user = User.userIndex) WHERE MissionEvaluation.user={} and NOT date IS NULL ORDER BY date DESC LIMIT {} , 10".format(userIndex, reviewCount)
+        sql = "SELECT evaluationIndex, user,id, mission,missionName, rating, weather, date, comment, picture, temperature ,User.grade as grade FROM MissionEvaluation join Mission on MissionEvaluation.mission = Mission.missionID join User on (MissionEvaluation.user = User.userIndex) WHERE MissionEvaluation.user={} and NOT date IS NULL ORDER BY date DESC LIMIT {} , 10".format(userIndex, reviewCount)
     else:
-        sql = "SELECT evaluationIndex,user,id,mission,missionName, rating, weather, date, comment, picture, temperature FROM MissionEvaluation join Mission on MissionEvaluation.mission = Mission.missionID join User on (MissionEvaluation.user = User.userIndex) WHERE NOT date IS NULL ORDER BY date DESC LIMIT {} , 10".format(reviewCount)
+        sql = "SELECT evaluationIndex,user,id,mission,missionName, rating, weather, date, comment, picture, temperature,User.grade as grade FROM MissionEvaluation join Mission on MissionEvaluation.mission = Mission.missionID join User on (MissionEvaluation.user = User.userIndex) WHERE NOT date IS NULL ORDER BY date DESC LIMIT {} , 10".format(reviewCount)
 
     try:
 
